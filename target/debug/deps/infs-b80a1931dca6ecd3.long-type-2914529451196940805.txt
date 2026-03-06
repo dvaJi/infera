@@ -1,0 +1,2 @@
+openrouter::_::<impl Deserialize<'de> for ChatCompletionResponse>::deserialize::__Field
+openrouter::_::<impl Deserialize<'de> for ChatResponseMessage>::deserialize::__Field
