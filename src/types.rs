@@ -161,9 +161,9 @@ mod tests {
 
     #[test]
     fn test_app_id_parse_valid() {
-        let app_id = AppId::parse("openrouter/claude-sonnet-45").unwrap();
+        let app_id = AppId::parse("openrouter/anthropic/claude-sonnet-4-5").unwrap();
         assert_eq!(app_id.provider, "openrouter");
-        assert_eq!(app_id.app, "claude-sonnet-45");
+        assert_eq!(app_id.app, "anthropic/claude-sonnet-4-5");
     }
     
     #[test]
