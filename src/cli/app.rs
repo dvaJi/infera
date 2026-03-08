@@ -47,22 +47,23 @@ pub async fn handle(cmd: AppCommands) -> Result<()> {
 
 async fn list_apps(category_filter: Option<String>, provider_filter: Option<String>) -> Result<()> {
     let registry = build_registry();
-    let catalog = Catalog::new(&registry);
-    
+    let app_config = config::load_config()?;
+    let catalog = Catalog::new(&registry, &app_config);
+
     let apps = if let Some(provider_id) = &provider_filter {
-        // Verify provider exists
+        // Verify provider exists, then fetch live
         registry.find_provider(provider_id)?;
-        catalog.list_apps_by_provider(provider_id)
+        catalog.list_apps_by_provider(provider_id).await?
     } else if let Some(cat_str) = &category_filter {
         let category = parse_category(cat_str)?;
-        catalog.list_apps_by_category(&category)
+        catalog.list_apps_by_category(&category).await
     } else {
-        catalog.list_all_apps()
+        catalog.list_all_apps().await
     };
-    
+
     println!("{:<45} {:<25} {:<10} {}", "FULL ID", "NAME", "CATEGORY", "DESCRIPTION");
     println!("{}", "-".repeat(110));
-    
+
     for app in &apps {
         let full_id = app.full_id();
         let truncated_desc = if app.description.len() > 40 {
@@ -70,36 +71,40 @@ async fn list_apps(category_filter: Option<String>, provider_filter: Option<Stri
         } else {
             app.description.clone()
         };
-        println!("{:<45} {:<25} {:<10} {}", full_id, app.display_name, app.category, truncated_desc);
+        println!(
+            "{:<45} {:<25} {:<10} {}",
+            full_id, app.display_name, app.category, truncated_desc
+        );
     }
-    
+
     eprintln!();
     eprintln!("Total: {} apps", apps.len());
-    
+
     Ok(())
 }
 
 async fn run_app(app_str: String, input_str: String) -> Result<()> {
     let app_id = AppId::parse(&app_str)?;
-    
+
     let input: serde_json::Value = serde_json::from_str(&input_str)
         .map_err(|e| crate::error::InfsError::InvalidInput(format!("Invalid JSON input: {}", e)))?;
-    
+
     let registry = build_registry();
     let provider = registry.find_provider(&app_id.provider)?;
-    
+
     let app_config = config::load_config()?;
-    let prov_config = app_config.providers.get(&app_id.provider)
+    let prov_config = app_config
+        .providers
+        .get(&app_id.provider)
         .cloned()
         .unwrap_or_default();
-    
+
     provider.validate_config(&prov_config)?;
-    
+
     eprintln!("Running {}/{}...", app_id.provider, app_id.app);
-    
+
     let response = provider.run_app(&app_id.app, input, &prov_config).await?;
-    
-    // Print output to stdout
+
     match &response.output {
         crate::types::RunOutput::Text(text) => {
             println!("{}", text);
@@ -113,39 +118,45 @@ async fn run_app(app_str: String, input_str: String) -> Result<()> {
             println!("{}", serde_json::to_string_pretty(val)?);
         }
     }
-    
-    // Print usage info to stderr
+
     if let Some(usage) = &response.usage {
         if let Some(total) = usage.total_tokens {
             eprintln!("Tokens used: {}", total);
         }
     }
-    
+
     Ok(())
 }
 
 async fn show_app(app_str: String) -> Result<()> {
     let app_id = AppId::parse(&app_str)?;
-    
+
     let registry = build_registry();
-    let provider = registry.find_provider(&app_id.provider)?;
-    
-    let apps = provider.list_apps();
-    let app = apps.iter().find(|a| a.id == app_id.app)
-        .ok_or_else(|| crate::error::InfsError::InvalidAppId(format!("App '{}' not found in provider '{}'", app_id.app, app_id.provider)))?;
-    
+    let app_config = config::load_config()?;
+    let catalog = Catalog::new(&registry, &app_config);
+
+    let app = catalog
+        .find_app(&app_id.provider, &app_id.app)
+        .await
+        .ok_or_else(|| {
+            crate::error::InfsError::InvalidAppId(format!(
+                "App '{}' not found in provider '{}'",
+                app_id.app, app_id.provider
+            ))
+        })?;
+
     println!("App:      {}", app.display_name);
     println!("ID:       {}", app.full_id());
     println!("Category: {}", app.category);
     println!();
     println!("Description:");
     println!("  {}", app.description);
-    
+
     if !app.tags.is_empty() {
         println!();
         println!("Tags: {}", app.tags.join(", "));
     }
-    
+
     Ok(())
 }
 
@@ -156,6 +167,9 @@ fn parse_category(s: &str) -> Result<crate::types::AppCategory> {
         "audio" => Ok(crate::types::AppCategory::Audio),
         "video" => Ok(crate::types::AppCategory::Video),
         "other" => Ok(crate::types::AppCategory::Other),
-        _ => Err(anyhow::anyhow!("Unknown category: '{}'. Valid: image, llm, audio, video, other", s)),
+        _ => Err(anyhow::anyhow!(
+            "Unknown category: '{}'. Valid: image, llm, audio, video, other",
+            s
+        )),
     }
 }

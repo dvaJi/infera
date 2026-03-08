@@ -13,7 +13,10 @@ use crate::config::ProviderConfig;
 pub trait Provider: Send + Sync {
     fn descriptor(&self) -> &ProviderDescriptor;
     fn supported_auth_methods(&self) -> Vec<AuthMethod>;
-    fn list_apps(&self) -> Vec<AppDescriptor>;
+    /// Fetch the list of apps/models from the provider.
+    /// When an API key is present in `config`, results are fetched live from the provider API.
+    /// When no API key is configured, a static fallback list of well-known models is returned.
+    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError>;
     async fn run_app(
         &self,
         app_id: &str,

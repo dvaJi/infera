@@ -21,55 +21,8 @@ impl OpenRouterProvider {
             },
         }
     }
-}
 
-#[derive(Serialize, Deserialize)]
-struct ChatMessage {
-    role: String,
-    content: String,
-}
-
-#[derive(Serialize)]
-struct ChatCompletionRequest {
-    model: String,
-    messages: Vec<ChatMessage>,
-}
-
-#[derive(Deserialize)]
-struct ChatCompletionResponse {
-    choices: Vec<ChatChoice>,
-    model: Option<String>,
-    usage: Option<OpenRouterUsage>,
-}
-
-#[derive(Deserialize)]
-struct ChatChoice {
-    message: ChatResponseMessage,
-}
-
-#[derive(Deserialize)]
-struct ChatResponseMessage {
-    content: String,
-}
-
-#[derive(Deserialize)]
-struct OpenRouterUsage {
-    prompt_tokens: Option<u64>,
-    completion_tokens: Option<u64>,
-    total_tokens: Option<u64>,
-}
-
-#[async_trait]
-impl Provider for OpenRouterProvider {
-    fn descriptor(&self) -> &ProviderDescriptor {
-        &self.descriptor
-    }
-    
-    fn supported_auth_methods(&self) -> Vec<AuthMethod> {
-        vec![AuthMethod::ApiKey]
-    }
-    
-    fn list_apps(&self) -> Vec<AppDescriptor> {
+    fn static_apps(&self) -> Vec<AppDescriptor> {
         vec![
             AppDescriptor {
                 id: "openai/gpt-4o".to_string(),
@@ -121,7 +74,112 @@ impl Provider for OpenRouterProvider {
             },
         ]
     }
-    
+}
+
+/// OpenRouter model as returned by GET /api/v1/models
+#[derive(Deserialize)]
+struct OpenRouterModel {
+    id: String,
+    name: String,
+    #[serde(default)]
+    description: String,
+}
+
+#[derive(Deserialize)]
+struct OpenRouterModelsResponse {
+    data: Vec<OpenRouterModel>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ChatMessage {
+    role: String,
+    content: String,
+}
+
+#[derive(Serialize)]
+struct ChatCompletionRequest {
+    model: String,
+    messages: Vec<ChatMessage>,
+}
+
+#[derive(Deserialize)]
+struct ChatCompletionResponse {
+    choices: Vec<ChatChoice>,
+    model: Option<String>,
+    usage: Option<OpenRouterUsage>,
+}
+
+#[derive(Deserialize)]
+struct ChatChoice {
+    message: ChatResponseMessage,
+}
+
+#[derive(Deserialize)]
+struct ChatResponseMessage {
+    content: String,
+}
+
+#[derive(Deserialize)]
+struct OpenRouterUsage {
+    prompt_tokens: Option<u64>,
+    completion_tokens: Option<u64>,
+    total_tokens: Option<u64>,
+}
+
+#[async_trait]
+impl Provider for OpenRouterProvider {
+    fn descriptor(&self) -> &ProviderDescriptor {
+        &self.descriptor
+    }
+
+    fn supported_auth_methods(&self) -> Vec<AuthMethod> {
+        vec![AuthMethod::ApiKey]
+    }
+
+    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError> {
+        let api_key = match config.get_api_key() {
+            Some(k) => k.to_string(),
+            None => {
+                tracing::debug!("openrouter: no API key configured, returning static model list");
+                return Ok(self.static_apps());
+            }
+        };
+
+        let client = reqwest::Client::new();
+        let response = client
+            .get("https://openrouter.ai/api/v1/models")
+            .header("Authorization", format!("Bearer {}", api_key))
+            .header("HTTP-Referer", "https://github.com/dvaJi/infera")
+            .header("X-Title", "infs")
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            tracing::warn!(
+                "openrouter: /api/v1/models returned {}, falling back to static list",
+                response.status()
+            );
+            return Ok(self.static_apps());
+        }
+
+        let models_response: OpenRouterModelsResponse = response.json().await?;
+
+        let apps = models_response
+            .data
+            .into_iter()
+            .map(|m| AppDescriptor {
+                id: m.id,
+                provider_id: "openrouter".to_string(),
+                display_name: m.name,
+                description: m.description,
+                category: AppCategory::Llm,
+                tags: vec![],
+            })
+            .collect();
+
+        Ok(apps)
+    }
+
     async fn run_app(
         &self,
         app_id: &str,
@@ -130,7 +188,7 @@ impl Provider for OpenRouterProvider {
     ) -> Result<RunResponse, InfsError> {
         let api_key = config.get_api_key()
             .ok_or_else(|| InfsError::ProviderNotConfigured("openrouter".to_string()))?;
-        
+
         // Normalize input: accept {"prompt": "..."} or {"messages": [...]}
         let messages = if let Some(prompt) = input.get("prompt").and_then(|v| v.as_str()) {
             vec![ChatMessage {
@@ -144,12 +202,12 @@ impl Provider for OpenRouterProvider {
                 "Input must have 'prompt' string or 'messages' array".to_string()
             ));
         };
-        
+
         let request = ChatCompletionRequest {
             model: app_id.to_string(),
             messages,
         };
-        
+
         let client = reqwest::Client::new();
         let response = client
             .post("https://openrouter.ai/api/v1/chat/completions")
@@ -159,7 +217,7 @@ impl Provider for OpenRouterProvider {
             .json(&request)
             .send()
             .await?;
-        
+
         let status = response.status();
         if !status.is_success() {
             let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
@@ -169,15 +227,15 @@ impl Provider for OpenRouterProvider {
                 message: error_text,
             });
         }
-        
+
         let completion: ChatCompletionResponse = response.json().await?;
-        
+
         let content = completion.choices
             .into_iter()
             .next()
             .map(|c| c.message.content)
             .unwrap_or_default();
-        
+
         Ok(RunResponse {
             output: RunOutput::Text(content),
             model: completion.model.unwrap_or_else(|| app_id.to_string()),
@@ -189,7 +247,7 @@ impl Provider for OpenRouterProvider {
             }),
         })
     }
-    
+
     fn validate_config(&self, config: &ProviderConfig) -> Result<(), InfsError> {
         if config.get_api_key().is_none() {
             return Err(InfsError::ProviderNotConfigured("openrouter".to_string()));
@@ -202,15 +260,14 @@ impl Provider for OpenRouterProvider {
 mod tests {
     use super::*;
     use serde_json::json;
-    
+
     #[test]
     fn test_input_prompt_normalization() {
-        // Just test the JSON structure, not actual HTTP calls
         let input = json!({"prompt": "Hello, world!"});
         let prompt = input.get("prompt").and_then(|v| v.as_str()).unwrap();
         assert_eq!(prompt, "Hello, world!");
     }
-    
+
     #[test]
     fn test_provider_descriptor() {
         let provider = OpenRouterProvider::new();
@@ -218,14 +275,12 @@ mod tests {
         assert_eq!(d.id, "openrouter");
         assert_eq!(d.display_name, "OpenRouter");
     }
-    
+
     #[test]
-    fn test_list_apps_not_empty() {
+    fn test_static_apps_not_empty() {
         let provider = OpenRouterProvider::new();
-        let apps = provider.list_apps();
+        let apps = provider.static_apps();
         assert!(!apps.is_empty());
-        
-        // Verify all apps have openrouter as provider
         for app in &apps {
             assert_eq!(app.provider_id, "openrouter");
         }

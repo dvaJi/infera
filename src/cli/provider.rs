@@ -134,10 +134,12 @@ async fn show_provider(provider_id: &str) -> Result<()> {
     println!("Auth:       {}", auth_methods.join(", "));
     
     println!();
-    println!("Apps ({}): ", provider.list_apps().len());
-    for app in provider.list_apps() {
+    let prov_config_for_list = app_config.providers.get(&d.id).cloned().unwrap_or_default();
+    let apps = provider.list_apps(&prov_config_for_list).await.unwrap_or_default();
+    println!("Apps ({}): ", apps.len());
+    for app in &apps {
         println!("  - {} ({})", app.display_name, app.id);
     }
-    
+
     Ok(())
 }

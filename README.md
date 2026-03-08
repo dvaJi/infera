@@ -23,16 +23,16 @@ Every AI provider has its own API shape, auth flow, and SDK. `infs` wraps them b
 
 ## Current Status
 
-| Provider | Category | Status | Auth |
-|---|---|---|---|
-| OpenRouter | LLM | ✅ Fully implemented | API key |
-| fal.ai | Image | 🚧 Scaffolded (listing works, run not yet implemented) | API key |
-| Replicate | Image | 🚧 Scaffolded (listing works, run not yet implemented) | API key |
-| WaveSpeed AI | Image | 🚧 Scaffolded (listing works, run not yet implemented) | API key |
+| Provider | Category | Status | Auth | App Listing |
+|---|---|---|---|---|
+| OpenRouter | LLM | ✅ Fully implemented | API key | Live from API when connected, static fallback when not |
+| fal.ai | Image | 🚧 Listing live, run not yet implemented | API key | Live from `api.fal.ai/v1/models` when connected |
+| Replicate | Image | 🚧 Listing live, run not yet implemented | API key | Live from `api.replicate.com/v1/models` when connected |
+| WaveSpeed AI | Image/Video | 🚧 Listing live, run not yet implemented | API key | Live from `api.wavespeed.ai/api/v3/models` when connected |
 
-**OpenRouter** is the reference implementation: full end-to-end API key auth and model execution work today.
+**OpenRouter** is the reference implementation: full end-to-end API key auth and model execution work today. When connected, `app list` fetches live from the OpenRouter API.
 
-The image providers (fal.ai, Replicate, WaveSpeed) are registered and appear in listings, but execution returns a "not yet implemented" error. The architecture makes it straightforward to add execution — see the [Development](#development) section.
+The image providers (fal.ai, Replicate, WaveSpeed) support **live model listing** from their APIs when an API key is configured. Execution (`app run`) returns a "not yet implemented" error. When no API key is configured, a static fallback list of well-known models is shown.
 
 ## Installation
 
@@ -139,21 +139,24 @@ Any model available on OpenRouter can be run using its OpenRouter model ID (e.g.
 fal.ai provides fast, serverless image generation APIs.
 
 **Website:** https://fal.ai  
-**Status:** Scaffolded — `app list` works, `app run` is not yet implemented.
+**Get an API key:** https://fal.ai/dashboard/keys  
+**Status:** Live model listing from `https://api.fal.ai/v1/models` when connected. `app run` not yet implemented.
 
 ### Replicate
 
 Replicate runs machine learning models in the cloud.
 
 **Website:** https://replicate.com  
-**Status:** Scaffolded — `app list` works, `app run` is not yet implemented.
+**Get an API key:** https://replicate.com/account/api-tokens  
+**Status:** Live model listing from `https://api.replicate.com/v1/models` when connected. `app run` not yet implemented.
 
 ### WaveSpeed AI
 
-WaveSpeed AI provides fast image generation.
+WaveSpeed AI provides fast image and video generation.
 
 **Website:** https://wavespeed.ai  
-**Status:** Scaffolded — `app list` works, `app run` is not yet implemented.
+**Get an API key:** https://wavespeed.ai/  
+**Status:** Live model listing from `https://api.wavespeed.ai/api/v3/models` when connected. `app run` not yet implemented.
 
 ## Authentication
 
@@ -277,16 +280,14 @@ pub fn build_registry() -> ProviderRegistry {
 }
 ```
 
-### Completing a scaffolded provider
+### Completing provider execution
 
-The image providers (fal.ai, Replicate, WaveSpeed) are ready to implement. Each file has a `run_app` stub returning `InfsError::NotImplemented`. To complete them:
+The image providers (fal.ai, Replicate, WaveSpeed) already fetch live model listings from their APIs. What remains is execution. Each file has a `run_app` stub returning `InfsError::NotImplemented`. To complete them:
 
 1. Read the provider's API documentation
-2. Add the request/response types
+2. Add the request/response types for execution
 3. Implement the HTTP call in `run_app`
 4. Add tests
-
-See `src/providers/openrouter.rs` as the reference implementation.
 
 ### Running tests
 
@@ -303,7 +304,7 @@ cargo test
 ## Known Limitations
 
 - Image provider execution (fal.ai, Replicate, WaveSpeed) is not yet implemented
-- Built-in model catalog is static — dynamic discovery from provider APIs is not yet implemented
+- Model listing requires an API key for fal.ai, Replicate, and WaveSpeed; a static fallback is shown when not connected
 - Credentials are stored in a plain TOML file, not the OS keychain
 - No streaming support for LLM responses
 - No file input/output for image generation artifacts
