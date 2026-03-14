@@ -8,7 +8,7 @@ A fast, provider-agnostic CLI for discovering, connecting, and executing AI apps
 
 ```
 infs app run openrouter/anthropic/claude-sonnet-4-5 --input '{"prompt":"Explain quantum computing"}'
-infs app run falai/fal-ai/flux-dev-lora --input '{"prompt":"a cat astronaut in space"}'
+infs app run falai/fal-ai/flux/dev --input '{"prompt":"a cat astronaut in space"}'
 infs app list --category image
 ```
 
@@ -39,8 +39,8 @@ The image providers (fal.ai, Replicate, WaveSpeed) support **live model listing*
 ### Build from source
 
 ```bash
-git clone https://github.com/dvaJi/infera
-cd infera
+git clone https://github.com/dvaJi/infs
+cd infs
 cargo build --release
 # Binary is at ./target/release/infs
 ```
@@ -102,7 +102,7 @@ infs app run openrouter/openai/gpt-4o --input '{"prompt":"Write a haiku about Ru
 infs app run openrouter/meta-llama/llama-3.1-8b-instruct --input '{"prompt":"What is 2+2?"}'
 
 # Image generation (scaffolded — will return not-yet-implemented error)
-infs app run falai/fal-ai/flux-dev-lora --input '{"prompt":"a cat astronaut in space"}'
+infs app run falai/fal-ai/flux/dev --input '{"prompt":"a cat astronaut in space"}'
 ```
 
 ### Utilities
@@ -163,14 +163,14 @@ WaveSpeed AI provides fast image and video generation.
 `infs` stores configuration in your OS's standard config directory:
 
 - **Linux:** `~/.config/infs/`
-- **macOS:** `~/Library/Application Support/infs/`
-- **Windows:** `%APPDATA%\infs\`
+- **macOS:** `~/Library/Application Support/infs/infs/`
+- **Windows:** `%APPDATA%\infs\infs\`
 
 Two files are used:
 - `config.toml` — provider settings and metadata (non-sensitive)
 - `credentials.toml` — API keys and secrets
 
-> **Note:** Credentials are stored in a plain TOML file for now. A future version will integrate with the OS keychain via the `keyring` crate. The credential storage is isolated behind a trait interface to make this swap straightforward.
+> **Note:** On Unix, `credentials.toml` is written with file mode `0600` (owner read/write only). A future version will optionally integrate with the OS keychain via the `keyring` crate.
 
 ### Connecting to OpenRouter
 
@@ -256,16 +256,19 @@ src/
 ```rust
 use async_trait::async_trait;
 use crate::providers::Provider;
+use crate::config::ProviderConfig;
+use crate::error::InfsError;
+use crate::types::{AppDescriptor, AuthMethod, ProviderDescriptor, RunResponse};
 
-pub struct MyProvider { /* ... */ }
+pub struct MyProvider { descriptor: ProviderDescriptor }
 
 #[async_trait]
 impl Provider for MyProvider {
-    fn descriptor(&self) -> &ProviderDescriptor { /* ... */ }
-    fn supported_auth_methods(&self) -> Vec<AuthMethod> { /* ... */ }
-    fn list_apps(&self) -> Vec<AppDescriptor> { /* ... */ }
-    async fn run_app(&self, app_id: &str, input: Value, config: &ProviderConfig) -> Result<RunResponse, InfsError> { /* ... */ }
-    fn validate_config(&self, config: &ProviderConfig) -> Result<(), InfsError> { /* ... */ }
+    fn descriptor(&self) -> &ProviderDescriptor { &self.descriptor }
+    fn supported_auth_methods(&self) -> Vec<AuthMethod> { vec![AuthMethod::ApiKey] }
+    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError> { /* fetch and return available apps from the provider API */ }
+    async fn run_app(&self, app_id: &str, input: serde_json::Value, config: &ProviderConfig) -> Result<RunResponse, InfsError> { /* call the provider's inference API */ }
+    fn validate_config(&self, config: &ProviderConfig) -> Result<(), InfsError> { /* check that required credentials are present */ }
 }
 ```
 
@@ -273,10 +276,10 @@ impl Provider for MyProvider {
 
 ```rust
 pub fn build_registry() -> ProviderRegistry {
-    ProviderRegistry::new(vec![
-        // ...existing providers...
-        Box::new(myprovider::MyProvider::new()),
-    ])
+    let mut registry = ProviderRegistry::new();
+    // ...existing providers...
+    registry.register(Box::new(myprovider::MyProvider::new()));
+    registry
 }
 ```
 
@@ -319,7 +322,7 @@ cargo test
 - [ ] OS keychain integration for credential storage (`keyring` crate)
 - [ ] `--json` output flag for machine-friendly output
 - [ ] Streaming LLM responses
-- [ ] Dynamic model discovery from provider APIs
+- [ ] Paginated model listing for providers returning large catalogs
 - [ ] File output for image generation (download to local file)
 - [ ] File input support
 - [ ] Retry logic with exponential backoff

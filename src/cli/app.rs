@@ -66,11 +66,7 @@ async fn list_apps(category_filter: Option<String>, provider_filter: Option<Stri
 
     for app in &apps {
         let full_id = app.full_id();
-        let truncated_desc = if app.description.len() > 40 {
-            format!("{}...", &app.description[..37])
-        } else {
-            app.description.clone()
-        };
+        let truncated_desc = truncate_str(&app.description, 40);
         println!(
             "{:<45} {:<25} {:<10} {}",
             full_id, app.display_name, app.category, truncated_desc
@@ -172,4 +168,26 @@ fn parse_category(s: &str) -> Result<crate::types::AppCategory> {
             s
         )),
     }
+}
+
+/// Truncate a string to at most `max_chars` Unicode scalar values, appending "..." if truncated.
+fn truncate_str(s: &str, max_chars: usize) -> String {
+    let mut char_count = 0usize;
+    let mut last_boundary = 0usize; // byte index of the trim point (max_chars - 3)
+    let trim_to = max_chars.saturating_sub(3);
+
+    for (byte_idx, _ch) in s.char_indices() {
+        if char_count == trim_to {
+            last_boundary = byte_idx;
+        }
+        if char_count == max_chars {
+            // Need to truncate — use the saved boundary
+            let mut out = s[..last_boundary].to_string();
+            out.push_str("...");
+            return out;
+        }
+        char_count += 1;
+    }
+    // String fits within max_chars — return as-is
+    s.to_string()
 }

@@ -18,6 +18,7 @@ impl WavespeedProvider {
                 description: "Fast and affordable AI model inference".to_string(),
                 categories: vec![AppCategory::Image, AppCategory::Video],
                 website: "https://wavespeed.ai".to_string(),
+                api_key_help_url: "https://wavespeed.ai/dashboard".to_string(),
             },
         }
     }

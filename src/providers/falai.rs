@@ -18,6 +18,7 @@ impl FalAiProvider {
                 description: "Fast inference for image and video generation models".to_string(),
                 categories: vec![AppCategory::Image],
                 website: "https://fal.ai".to_string(),
+                api_key_help_url: "https://fal.ai/dashboard/keys".to_string(),
             },
         }
     }

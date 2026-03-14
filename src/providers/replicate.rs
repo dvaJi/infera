@@ -18,6 +18,7 @@ impl ReplicateProvider {
                 description: "Run AI models in the cloud".to_string(),
                 categories: vec![AppCategory::Image],
                 website: "https://replicate.com".to_string(),
+                api_key_help_url: "https://replicate.com/account/api-tokens".to_string(),
             },
         }
     }

@@ -18,6 +18,7 @@ impl OpenRouterProvider {
                 description: "Unified API for hundreds of LLM models".to_string(),
                 categories: vec![AppCategory::Llm],
                 website: "https://openrouter.ai".to_string(),
+                api_key_help_url: "https://openrouter.ai/keys".to_string(),
             },
         }
     }
@@ -141,6 +142,9 @@ impl Provider for OpenRouterProvider {
             Some(k) => k.to_string(),
             None => {
                 tracing::debug!("openrouter: no API key configured, returning static model list");
+                eprintln!(
+                    "OpenRouter: showing cached models. Connect with `infs provider connect openrouter` to see the full live catalog."
+                );
                 return Ok(self.static_apps());
             }
         };
@@ -149,7 +153,7 @@ impl Provider for OpenRouterProvider {
         let response = client
             .get("https://openrouter.ai/api/v1/models")
             .header("Authorization", format!("Bearer {}", api_key))
-            .header("HTTP-Referer", "https://github.com/dvaJi/infera")
+            .header("HTTP-Referer", "https://github.com/dvaJi/infs")
             .header("X-Title", "infs")
             .send()
             .await?;
@@ -212,7 +216,7 @@ impl Provider for OpenRouterProvider {
         let response = client
             .post("https://openrouter.ai/api/v1/chat/completions")
             .header("Authorization", format!("Bearer {}", api_key))
-            .header("HTTP-Referer", "https://github.com/dvaJi/infera")
+            .header("HTTP-Referer", "https://github.com/dvaJi/infs")
             .header("X-Title", "infs")
             .json(&request)
             .send()
@@ -261,11 +265,52 @@ mod tests {
     use super::*;
     use serde_json::json;
 
+    fn normalize_input(input: serde_json::Value) -> Result<Vec<ChatMessage>, InfsError> {
+        if let Some(prompt) = input.get("prompt").and_then(|v| v.as_str()) {
+            Ok(vec![ChatMessage {
+                role: "user".to_string(),
+                content: prompt.to_string(),
+            }])
+        } else if let Some(messages_val) = input.get("messages") {
+            Ok(serde_json::from_value(messages_val.clone())?)
+        } else {
+            Err(InfsError::InvalidInput(
+                "Input must have 'prompt' string or 'messages' array".to_string(),
+            ))
+        }
+    }
+
     #[test]
     fn test_input_prompt_normalization() {
-        let input = json!({"prompt": "Hello, world!"});
-        let prompt = input.get("prompt").and_then(|v| v.as_str()).unwrap();
-        assert_eq!(prompt, "Hello, world!");
+        let messages = normalize_input(json!({"prompt": "Hello, world!"})).unwrap();
+        assert_eq!(messages.len(), 1);
+        assert_eq!(messages[0].role, "user");
+        assert_eq!(messages[0].content, "Hello, world!");
+    }
+
+    #[test]
+    fn test_input_messages_passthrough() {
+        let input = json!({
+            "messages": [
+                {"role": "system", "content": "You are helpful."},
+                {"role": "user", "content": "Hi"}
+            ]
+        });
+        let messages = normalize_input(input).unwrap();
+        assert_eq!(messages.len(), 2);
+        assert_eq!(messages[0].role, "system");
+        assert_eq!(messages[1].role, "user");
+    }
+
+    #[test]
+    fn test_input_invalid_returns_error() {
+        let result = normalize_input(json!({"something_else": "value"}));
+        assert!(result.is_err());
+        if let Err(InfsError::InvalidInput(msg)) = result {
+            assert!(msg.contains("'prompt'"));
+        } else {
+            panic!("Expected InvalidInput error");
+        }
     }
 
     #[test]
@@ -274,6 +319,7 @@ mod tests {
         let d = provider.descriptor();
         assert_eq!(d.id, "openrouter");
         assert_eq!(d.display_name, "OpenRouter");
+        assert_eq!(d.api_key_help_url, "https://openrouter.ai/keys");
     }
 
     #[test]

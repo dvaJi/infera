@@ -51,7 +51,7 @@ async fn list_providers() -> Result<()> {
     for provider in registry.list_providers() {
         let d = provider.descriptor();
         let prov_config = app_config.providers.get(&d.id);
-        let status = if prov_config.map_or(false, |c| c.connected) {
+        let status = if prov_config.map_or(false, |c| c.connected && c.get_api_key().is_some()) {
             ProviderConnectionStatus::Connected
         } else {
             ProviderConnectionStatus::NotConnected
@@ -76,8 +76,7 @@ async fn connect_provider(provider_id: &str) -> Result<()> {
     let auth_methods = provider.supported_auth_methods();
     let auth_descriptor = match auth_methods.first() {
         Some(crate::types::AuthMethod::ApiKey) => {
-            let help_url = format!("{}/keys", d.website);
-            auth::get_api_key_descriptor(&d.display_name, &help_url)
+            auth::get_api_key_descriptor(&d.display_name, &d.api_key_help_url)
         }
         _ => {
             return Err(anyhow::anyhow!("Unsupported auth method for provider: {}", provider_id));
@@ -112,7 +111,7 @@ async fn show_provider(provider_id: &str) -> Result<()> {
     let app_config = config::load_config()?;
     
     let prov_config = app_config.providers.get(&d.id);
-    let status = if prov_config.map_or(false, |c| c.connected) {
+    let status = if prov_config.map_or(false, |c| c.connected && c.get_api_key().is_some()) {
         ProviderConnectionStatus::Connected
     } else {
         ProviderConnectionStatus::NotConnected
@@ -135,10 +134,17 @@ async fn show_provider(provider_id: &str) -> Result<()> {
     
     println!();
     let prov_config_for_list = app_config.providers.get(&d.id).cloned().unwrap_or_default();
-    let apps = provider.list_apps(&prov_config_for_list).await.unwrap_or_default();
-    println!("Apps ({}): ", apps.len());
-    for app in &apps {
-        println!("  - {} ({})", app.display_name, app.id);
+    match provider.list_apps(&prov_config_for_list).await {
+        Ok(apps) => {
+            println!("Apps ({}): ", apps.len());
+            for app in &apps {
+                println!("  - {} ({})", app.display_name, app.id);
+            }
+        }
+        Err(e) => {
+            eprintln!("Warning: could not fetch app list: {}", e);
+            println!("Apps: (unavailable — run `infs provider connect {}` to see live models)", provider_id);
+        }
     }
 
     Ok(())

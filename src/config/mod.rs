@@ -41,18 +41,17 @@ pub fn get_credentials_path() -> Result<PathBuf, InfsError> {
 
 pub fn load_config() -> Result<AppConfig, InfsError> {
     let config_path = get_config_path()?;
-    
-    if !config_path.exists() {
-        return Ok(AppConfig::default());
-    }
-    
-    let content = std::fs::read_to_string(&config_path)
-        .map_err(|e| InfsError::ConfigError(format!("Failed to read config: {}", e)))?;
-    
-    let mut config: AppConfig = toml::from_str(&content)
-        .map_err(|e| InfsError::ConfigError(format!("Failed to parse config: {}", e)))?;
-    
-    // Merge credentials from separate file
+
+    let mut config = if config_path.exists() {
+        let content = std::fs::read_to_string(&config_path)
+            .map_err(|e| InfsError::ConfigError(format!("Failed to read config: {}", e)))?;
+        toml::from_str(&content)
+            .map_err(|e| InfsError::ConfigError(format!("Failed to parse config: {}", e)))?
+    } else {
+        AppConfig::default()
+    };
+
+    // Merge credentials from separate file (even if config.toml was absent)
     let creds_path = get_credentials_path()?;
     if creds_path.exists() {
         let creds_content = std::fs::read_to_string(&creds_path)
@@ -110,10 +109,33 @@ pub fn save_config(config: &AppConfig) -> Result<(), InfsError> {
     let creds_content = toml::to_string_pretty(&cred_store)
         .map_err(|e| InfsError::ConfigError(format!("Failed to serialize credentials: {}", e)))?;
     
-    std::fs::write(get_credentials_path()?, creds_content)
-        .map_err(|e| InfsError::ConfigError(format!("Failed to write credentials: {}", e)))?;
+    write_credentials_file(&get_credentials_path()?, &creds_content)?;
     
     Ok(())
+}
+
+/// Write a file containing sensitive data (API keys) with restrictive permissions (0600 on Unix).
+fn write_credentials_file(path: &std::path::Path, content: &str) -> Result<(), InfsError> {
+    #[cfg(unix)]
+    {
+        use std::io::Write;
+        use std::os::unix::fs::OpenOptionsExt;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .mode(0o600)
+            .open(path)
+            .map_err(|e| InfsError::ConfigError(format!("Failed to open credentials file: {}", e)))?;
+        file.write_all(content.as_bytes())
+            .map_err(|e| InfsError::ConfigError(format!("Failed to write credentials: {}", e)))?;
+        Ok(())
+    }
+    #[cfg(not(unix))]
+    {
+        std::fs::write(path, content)
+            .map_err(|e| InfsError::ConfigError(format!("Failed to write credentials: {}", e)))
+    }
 }
 
 pub fn save_provider_credentials(provider_id: &str, credentials: HashMap<String, String>) -> Result<(), InfsError> {

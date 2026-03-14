@@ -93,6 +93,8 @@ pub struct ProviderDescriptor {
     pub description: String,
     pub categories: Vec<AppCategory>,
     pub website: String,
+    /// URL where the user can obtain an API key for this provider.
+    pub api_key_help_url: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
