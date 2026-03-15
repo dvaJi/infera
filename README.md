@@ -28,11 +28,13 @@ Every AI provider has its own API shape, auth flow, and SDK. `infs` wraps them b
 | OpenRouter | LLM | ✅ Fully implemented | API key | Live from API when connected, static fallback when not |
 | fal.ai | Image | 🚧 Listing live, run not yet implemented | API key | Live from `api.fal.ai/v1/models` when connected |
 | Replicate | Image | 🚧 Listing live, run not yet implemented | API key | Live from `api.replicate.com/v1/models` when connected |
-| WaveSpeed AI | Image/Video | 🚧 Listing live, run not yet implemented | API key | Live from `api.wavespeed.ai/api/v3/models` when connected |
+| WaveSpeed AI | Image/Video | ✅ Listing live + run implemented | API key | Live from `api.wavespeed.ai/api/v3/models` when connected |
 
 **OpenRouter** is the reference implementation: full end-to-end API key auth and model execution work today. When connected, `app list` fetches live from the OpenRouter API.
 
-The image providers (fal.ai, Replicate, WaveSpeed) support **live model listing** from their APIs when an API key is configured. Execution (`app run`) returns a "not yet implemented" error. When no API key is configured, a static fallback list of well-known models is shown.
+**WaveSpeed AI** is also fully implemented: model listing and image/video generation both work end-to-end. When connected, `app list` fetches live from the WaveSpeed API, and `app run` submits an inference task and polls for the result.
+
+The image providers (fal.ai, Replicate) support **live model listing** from their APIs when an API key is configured. Execution (`app run`) returns a "not yet implemented" error. When no API key is configured, a static fallback list of well-known models is shown.
 
 ## Installation
 
@@ -101,6 +103,12 @@ infs app run openrouter/openai/gpt-4o --input '{"prompt":"Write a haiku about Ru
 # Run a free model
 infs app run openrouter/meta-llama/llama-3.1-8b-instruct --input '{"prompt":"What is 2+2?"}'
 
+# Image generation via WaveSpeed AI
+infs app run wavespeed/wavespeed-ai/flux-schnell --input '{"prompt":"a cat astronaut in space"}'
+
+# Nano Banana 2 text-to-image via WaveSpeed AI
+infs app run wavespeed/google/nano-banana-2 --input '{"prompt":"a serene mountain lake at sunset"}'
+
 # Image generation (scaffolded — will return not-yet-implemented error)
 infs app run falai/fal-ai/flux/dev --input '{"prompt":"a cat astronaut in space"}'
 ```
@@ -155,8 +163,18 @@ Replicate runs machine learning models in the cloud.
 WaveSpeed AI provides fast image and video generation.
 
 **Website:** https://wavespeed.ai  
-**Get an API key:** https://wavespeed.ai/  
-**Status:** Live model listing from `https://api.wavespeed.ai/api/v3/models` when connected. `app run` not yet implemented.
+**Get an API key:** https://wavespeed.ai/dashboard  
+**Status:** ✅ Fully implemented — live model listing and inference both work.
+
+**How it works:** `app run` submits a generation task via `POST /api/v3/<model_id>` and then polls `GET /api/v3/predictions/<task_id>` until the task completes (up to ~2 minutes). The generated image URLs are printed to stdout.
+
+**Models included in built-in catalog:**
+- `wavespeed/wavespeed-ai/flux-dev` — FLUX Dev
+- `wavespeed/wavespeed-ai/flux-schnell` — FLUX Schnell
+- `wavespeed/wavespeed-ai/wan2.1-t2v-480p` — Wan2.1 Text-to-Video 480p
+- `wavespeed/google/nano-banana-2` — Google Nano Banana 2 (text-to-image)
+
+Any model available on WaveSpeed can be run using its WaveSpeed model ID.
 
 ## Authentication
 
@@ -215,6 +233,14 @@ infs app run openrouter/openai/gpt-4o --input '{
 infs app list --category image
 ```
 
+### Generate an image with WaveSpeed AI
+
+```bash
+infs provider connect wavespeed  # First time only — enter your API key
+infs app run wavespeed/google/nano-banana-2 --input '{"prompt":"a serene mountain lake at sunset"}'
+# Outputs one or more image URLs once generation completes
+```
+
 ### Check what is configured
 
 ```bash
@@ -238,7 +264,7 @@ src/
 │   ├── openrouter.rs    # ✅ Full implementation
 │   ├── falai.rs         # 🚧 Scaffolded
 │   ├── replicate.rs     # 🚧 Scaffolded
-│   └── wavespeed.rs     # 🚧 Scaffolded
+│   └── wavespeed.rs     # ✅ Full implementation
 ├── catalog/             # App catalog (aggregates provider listings)
 └── cli/                 # CLI commands
     ├── mod.rs
@@ -306,7 +332,7 @@ cargo test
 
 ## Known Limitations
 
-- Image provider execution (fal.ai, Replicate, WaveSpeed) is not yet implemented
+- Image provider execution (fal.ai, Replicate) is not yet implemented
 - Model listing requires an API key for fal.ai, Replicate, and WaveSpeed; a static fallback is shown when not connected
 - Credentials are stored in a plain TOML file, not the OS keychain
 - No streaming support for LLM responses
@@ -318,7 +344,7 @@ cargo test
 
 - [ ] Complete fal.ai execution (image generation via API)
 - [ ] Complete Replicate execution
-- [ ] Complete WaveSpeed AI execution
+- [x] Complete WaveSpeed AI execution
 - [ ] OS keychain integration for credential storage (`keyring` crate)
 - [ ] `--json` output flag for machine-friendly output
 - [ ] Streaming LLM responses
