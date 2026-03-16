@@ -38,11 +38,33 @@ The image providers (fal.ai, Replicate) support **live model listing** from thei
 
 ## Installation
 
+### Download a pre-built binary (recommended)
+
+Pre-built binaries are attached to every [GitHub Release](https://github.com/dvaJi/infera/releases/latest).
+Download the archive for your platform, extract it, and place the binary somewhere on your `PATH`:
+
+| Platform | File |
+|---|---|
+| Linux x86_64 | `infs-linux-x86_64` |
+| Linux aarch64 (ARM) | `infs-linux-aarch64` |
+| macOS x86_64 (Intel) | `infs-macos-x86_64` |
+| macOS aarch64 (Apple Silicon) | `infs-macos-aarch64` |
+| Windows x86_64 | `infs-windows-x86_64.exe` |
+
+**macOS / Linux quick-install example:**
+
+```bash
+# Replace <version> and <platform> with the appropriate values
+curl -fsSL https://github.com/dvaJi/infera/releases/download/<version>/infs-<platform> \
+  -o /usr/local/bin/infs
+chmod +x /usr/local/bin/infs
+```
+
 ### Build from source
 
 ```bash
-git clone https://github.com/dvaJi/infs
-cd infs
+git clone https://github.com/dvaJi/infera
+cd infera
 cargo build --release
 # Binary is at ./target/release/infs
 ```
