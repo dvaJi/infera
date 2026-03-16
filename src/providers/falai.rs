@@ -212,7 +212,11 @@ impl Provider for FalAiProvider {
         let api_key = config.get_api_key()
             .ok_or_else(|| InfsError::ProviderNotConfigured("falai".to_string()))?;
 
-        let client = reqwest::Client::new();
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .connect_timeout(std::time::Duration::from_secs(10))
+            .build()
+            .map_err(|e| InfsError::NetworkError(e))?;
 
         // Step 1: Submit the request via POST https://queue.fal.run/<app_id>
         let submit_url = format!("https://queue.fal.run/{}", app_id);
@@ -262,7 +266,7 @@ impl Provider for FalAiProvider {
                 return Err(InfsError::ApiError {
                     provider: "falai".to_string(),
                     status: http_status.as_u16(),
-                    message: body,
+                    message: format!("Request {}: {}", request_id, body),
                 });
             }
 
@@ -295,7 +299,7 @@ impl Provider for FalAiProvider {
                         return Err(InfsError::ApiError {
                             provider: "falai".to_string(),
                             status: http_status.as_u16(),
-                            message: body,
+                            message: format!("Request {}: {}", request_id, body),
                         });
                     }
 
