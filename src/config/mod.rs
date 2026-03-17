@@ -190,9 +190,25 @@ pub fn save_config(config: &AppConfig) -> Result<(), InfsError> {
     let mut keychain_keys_per_provider: HashMap<String, Vec<String>> = HashMap::new();
 
     for (provider_id, provider_config) in &config.providers {
+        // Delete keychain entries for keys that are no longer in credentials
+        // (e.g. after a key rotation or partial credential removal).
+        let current_cred_keys: std::collections::HashSet<&str> = provider_config
+            .credentials
+            .keys()
+            .map(|s| s.as_str())
+            .collect();
+        for old_key in &provider_config.keychain_credentials {
+            if !current_cred_keys.contains(old_key.as_str()) {
+                keyring_delete(provider_id, old_key)?;
+            }
+        }
+
         if provider_config.credentials.is_empty() {
+            // Record an empty list so any previously-stale metadata is cleared.
+            keychain_keys_per_provider.insert(provider_id.clone(), Vec::new());
             continue;
         }
+
         let mut stored_in_keychain: Vec<String> = Vec::new();
         let mut fallback: HashMap<String, String> = HashMap::new();
 
@@ -204,9 +220,13 @@ pub fn save_config(config: &AppConfig) -> Result<(), InfsError> {
             }
         }
 
-        if !stored_in_keychain.is_empty() {
-            keychain_keys_per_provider.insert(provider_id.clone(), stored_in_keychain);
-        }
+        // Sort for stable, deterministic config output.
+        stored_in_keychain.sort();
+
+        // Always record the (possibly empty) keychain key list so that
+        // metadata accurately reflects the current storage location.
+        keychain_keys_per_provider.insert(provider_id.clone(), stored_in_keychain);
+
         if !fallback.is_empty() {
             file_creds.insert(provider_id.clone(), fallback);
         }
@@ -216,9 +236,12 @@ pub fn save_config(config: &AppConfig) -> Result<(), InfsError> {
     let mut config_without_creds = config.clone();
     for (provider_id, provider) in config_without_creds.providers.iter_mut() {
         provider.credentials.clear();
-        if let Some(keys) = keychain_keys_per_provider.get(provider_id) {
-            provider.keychain_credentials = keys.clone();
-        }
+        // Always overwrite keychain_credentials with the freshly computed list
+        // so stale entries can never take precedence on a subsequent load.
+        provider.keychain_credentials = keychain_keys_per_provider
+            .get(provider_id)
+            .cloned()
+            .unwrap_or_default();
     }
 
     // Write config.toml (single write).
@@ -363,6 +386,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires a real OS keychain (run with `cargo test -- --ignored`)"]
     fn test_keyring_set_get_delete() {
         // Exercise the keyring helpers end-to-end.
         //
