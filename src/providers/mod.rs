@@ -1,13 +1,13 @@
-pub mod registry;
-pub mod openrouter;
 pub mod falai;
+pub mod openrouter;
+pub mod registry;
 pub mod replicate;
 pub mod wavespeed;
 
-use async_trait::async_trait;
+use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::types::{AppDescriptor, AuthMethod, ProviderDescriptor, RunResponse};
-use crate::config::ProviderConfig;
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait Provider: Send + Sync {

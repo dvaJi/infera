@@ -1,8 +1,8 @@
+use crate::error::InfsError;
+use directories::ProjectDirs;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
-use directories::ProjectDirs;
-use crate::error::InfsError;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
@@ -26,8 +26,9 @@ impl ProviderConfig {
 }
 
 pub fn get_config_dir() -> Result<PathBuf, InfsError> {
-    let project_dirs = ProjectDirs::from("ai", "infs", "infs")
-        .ok_or_else(|| InfsError::ConfigError("Could not determine config directory".to_string()))?;
+    let project_dirs = ProjectDirs::from("ai", "infs", "infs").ok_or_else(|| {
+        InfsError::ConfigError("Could not determine config directory".to_string())
+    })?;
     Ok(project_dirs.config_dir().to_path_buf())
 }
 
@@ -56,10 +57,10 @@ pub fn load_config() -> Result<AppConfig, InfsError> {
     if creds_path.exists() {
         let creds_content = std::fs::read_to_string(&creds_path)
             .map_err(|e| InfsError::ConfigError(format!("Failed to read credentials: {}", e)))?;
-        
+
         let creds: HashMap<String, ProviderConfig> = toml::from_str(&creds_content)
             .map_err(|e| InfsError::ConfigError(format!("Failed to parse credentials: {}", e)))?;
-        
+
         for (provider_id, cred_config) in creds {
             let provider_config = config.providers.entry(provider_id).or_default();
             for (key, value) in cred_config.credentials {
@@ -67,7 +68,7 @@ pub fn load_config() -> Result<AppConfig, InfsError> {
             }
         }
     }
-    
+
     Ok(config)
 }
 
@@ -75,19 +76,19 @@ pub fn save_config(config: &AppConfig) -> Result<(), InfsError> {
     let config_dir = get_config_dir()?;
     std::fs::create_dir_all(&config_dir)
         .map_err(|e| InfsError::ConfigError(format!("Failed to create config dir: {}", e)))?;
-    
+
     // Save main config (without credentials)
     let mut config_without_creds = config.clone();
     for provider in config_without_creds.providers.values_mut() {
         provider.credentials.clear();
     }
-    
+
     let config_content = toml::to_string_pretty(&config_without_creds)
         .map_err(|e| InfsError::ConfigError(format!("Failed to serialize config: {}", e)))?;
-    
+
     std::fs::write(get_config_path()?, config_content)
         .map_err(|e| InfsError::ConfigError(format!("Failed to write config: {}", e)))?;
-    
+
     // Save credentials separately
     let mut creds: HashMap<String, HashMap<String, String>> = HashMap::new();
     for (provider_id, provider_config) in &config.providers {
@@ -95,22 +96,23 @@ pub fn save_config(config: &AppConfig) -> Result<(), InfsError> {
             creds.insert(provider_id.clone(), provider_config.credentials.clone());
         }
     }
-    
+
     // Build a ProviderConfig-like structure for TOML
     #[derive(Serialize)]
     struct CredStore {
         credentials: HashMap<String, String>,
     }
-    
-    let cred_store: HashMap<String, CredStore> = creds.into_iter()
+
+    let cred_store: HashMap<String, CredStore> = creds
+        .into_iter()
         .map(|(k, v)| (k, CredStore { credentials: v }))
         .collect();
-    
+
     let creds_content = toml::to_string_pretty(&cred_store)
         .map_err(|e| InfsError::ConfigError(format!("Failed to serialize credentials: {}", e)))?;
-    
+
     write_credentials_file(&get_credentials_path()?, &creds_content)?;
-    
+
     Ok(())
 }
 
@@ -126,7 +128,9 @@ fn write_credentials_file(path: &std::path::Path, content: &str) -> Result<(), I
             .truncate(true)
             .mode(0o600)
             .open(path)
-            .map_err(|e| InfsError::ConfigError(format!("Failed to open credentials file: {}", e)))?;
+            .map_err(|e| {
+                InfsError::ConfigError(format!("Failed to open credentials file: {}", e))
+            })?;
         file.write_all(content.as_bytes())
             .map_err(|e| InfsError::ConfigError(format!("Failed to write credentials: {}", e)))?;
         Ok(())
@@ -138,7 +142,10 @@ fn write_credentials_file(path: &std::path::Path, content: &str) -> Result<(), I
     }
 }
 
-pub fn save_provider_credentials(provider_id: &str, credentials: HashMap<String, String>) -> Result<(), InfsError> {
+pub fn save_provider_credentials(
+    provider_id: &str,
+    credentials: HashMap<String, String>,
+) -> Result<(), InfsError> {
     let mut config = load_config()?;
     let provider_config = config.providers.entry(provider_id.to_string()).or_default();
     provider_config.credentials = credentials;
@@ -164,16 +171,18 @@ mod tests {
         let config = AppConfig::default();
         assert!(config.providers.is_empty());
     }
-    
+
     #[test]
     fn test_provider_config_get_api_key() {
         let mut config = ProviderConfig::default();
         assert!(config.get_api_key().is_none());
-        
-        config.credentials.insert("api_key".to_string(), "test-key".to_string());
+
+        config
+            .credentials
+            .insert("api_key".to_string(), "test-key".to_string());
         assert_eq!(config.get_api_key(), Some("test-key"));
     }
-    
+
     #[test]
     fn test_config_roundtrip_toml() {
         let mut config = AppConfig::default();
@@ -181,10 +190,10 @@ mod tests {
         prov.connected = true;
         prov.auth_method = Some("api_key".to_string());
         config.providers.insert("openrouter".to_string(), prov);
-        
+
         let serialized = toml::to_string_pretty(&config).unwrap();
         let deserialized: AppConfig = toml::from_str(&serialized).unwrap();
-        
+
         assert!(deserialized.providers.contains_key("openrouter"));
         assert!(deserialized.providers["openrouter"].connected);
     }

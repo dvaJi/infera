@@ -1,9 +1,9 @@
-use clap::{Args, Subcommand};
-use anyhow::Result;
 use crate::catalog::Catalog;
 use crate::config;
 use crate::providers::registry::build_registry;
 use crate::types::AppId;
+use anyhow::Result;
+use clap::{Args, Subcommand};
 
 #[derive(Args)]
 pub struct AppCommands {
@@ -61,7 +61,10 @@ async fn list_apps(category_filter: Option<String>, provider_filter: Option<Stri
         catalog.list_all_apps().await
     };
 
-    println!("{:<45} {:<25} {:<10} {}", "FULL ID", "NAME", "CATEGORY", "DESCRIPTION");
+    println!(
+        "{:<45} {:<25} {:<10} DESCRIPTION",
+        "FULL ID", "NAME", "CATEGORY"
+    );
     println!("{}", "-".repeat(110));
 
     for app in &apps {
@@ -172,11 +175,10 @@ fn parse_category(s: &str) -> Result<crate::types::AppCategory> {
 
 /// Truncate a string to at most `max_chars` Unicode scalar values, appending "..." if truncated.
 fn truncate_str(s: &str, max_chars: usize) -> String {
-    let mut char_count = 0usize;
     let mut last_boundary = 0usize; // byte index of the trim point (max_chars - 3)
     let trim_to = max_chars.saturating_sub(3);
 
-    for (byte_idx, _ch) in s.char_indices() {
+    for (char_count, (byte_idx, _ch)) in s.char_indices().enumerate() {
         if char_count == trim_to {
             last_boundary = byte_idx;
         }
@@ -186,7 +188,6 @@ fn truncate_str(s: &str, max_chars: usize) -> String {
             out.push_str("...");
             return out;
         }
-        char_count += 1;
     }
     // String fits within max_chars — return as-is
     s.to_string()

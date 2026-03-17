@@ -120,6 +120,17 @@ chore: update dependencies
 
 Releases are fully automated using two GitHub Actions workflows:
 
+### CI (`ci.yml`)
+
+Every pull request and push to `main` triggers the CI workflow, which:
+
+- Builds the project (`cargo build`) on Linux, macOS, and Windows.
+- Runs the full test suite (`cargo test`).
+- Checks formatting (`cargo fmt --check`).
+- Runs Clippy lints (`cargo clippy -- -D warnings`).
+
+All checks must pass before merging.
+
 ### 1. Release Please (`release-please.yml`)
 
 Every time a commit is merged to `main`, [Release Please](https://github.com/googleapis/release-please) inspects the commit history, then:

@@ -10,7 +10,10 @@ pub struct Catalog<'a> {
 
 impl<'a> Catalog<'a> {
     pub fn new(registry: &'a ProviderRegistry, app_config: &'a AppConfig) -> Self {
-        Catalog { registry, app_config }
+        Catalog {
+            registry,
+            app_config,
+        }
     }
 
     pub async fn list_all_apps(&self) -> Vec<AppDescriptor> {
@@ -44,7 +47,10 @@ impl<'a> Catalog<'a> {
             .collect()
     }
 
-    pub async fn list_apps_by_provider(&self, provider_id: &str) -> Result<Vec<AppDescriptor>, InfsError> {
+    pub async fn list_apps_by_provider(
+        &self,
+        provider_id: &str,
+    ) -> Result<Vec<AppDescriptor>, InfsError> {
         let provider = self.registry.find_provider(provider_id)?;
         let prov_config = self
             .app_config

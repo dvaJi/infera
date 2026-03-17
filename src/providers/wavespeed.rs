@@ -1,9 +1,11 @@
-use async_trait::async_trait;
-use serde::Deserialize;
+use super::Provider;
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
-use crate::types::{AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse};
-use super::Provider;
+use crate::types::{
+    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse,
+};
+use async_trait::async_trait;
+use serde::Deserialize;
 
 pub struct WavespeedProvider {
     descriptor: ProviderDescriptor,
@@ -163,7 +165,7 @@ impl Provider for WavespeedProvider {
                 let display_name = m
                     .model_id
                     .split('/')
-                    .last()
+                    .next_back()
                     .unwrap_or(&m.model_id)
                     .replace('-', " ")
                     .split_whitespace()
@@ -196,7 +198,8 @@ impl Provider for WavespeedProvider {
         input: serde_json::Value,
         config: &ProviderConfig,
     ) -> Result<RunResponse, InfsError> {
-        let api_key = config.get_api_key()
+        let api_key = config
+            .get_api_key()
             .ok_or_else(|| InfsError::ProviderNotConfigured("wavespeed".to_string()))?;
 
         let client = reqwest::Client::new();
@@ -244,7 +247,12 @@ impl Provider for WavespeedProvider {
             if !poll_response.status().is_success() {
                 let status = poll_response.status();
                 let body = poll_response.text().await.unwrap_or_default();
-                tracing::warn!("wavespeed: GET predictions/{} returned {}: {}", task_id, status, body);
+                tracing::warn!(
+                    "wavespeed: GET predictions/{} returned {}: {}",
+                    task_id,
+                    status,
+                    body
+                );
                 return Err(InfsError::ApiError {
                     provider: "wavespeed".to_string(),
                     status: status.as_u16(),
@@ -255,7 +263,11 @@ impl Provider for WavespeedProvider {
             let poll_data: WavespeedPollResponse = poll_response.json().await?;
             match poll_data.data.status.as_str() {
                 "completed" => {
-                    tracing::debug!("wavespeed: task {} completed with {} output(s)", task_id, poll_data.data.outputs.len());
+                    tracing::debug!(
+                        "wavespeed: task {} completed with {} output(s)",
+                        task_id,
+                        poll_data.data.outputs.len()
+                    );
                     // WaveSpeed returns output URLs for both image and video models.
                     // RunOutput::ImageUrls is used for all URL outputs since there is no VideoUrls variant.
                     return Ok(RunResponse {
@@ -266,8 +278,9 @@ impl Provider for WavespeedProvider {
                     });
                 }
                 "failed" => {
-                    let error = poll_data.data.error
-                        .unwrap_or_else(|| "Task failed without error details from the API".to_string());
+                    let error = poll_data.data.error.unwrap_or_else(|| {
+                        "Task failed without error details from the API".to_string()
+                    });
                     tracing::warn!("wavespeed: task {} failed: {}", task_id, error);
                     return Err(InfsError::ApiError {
                         provider: "wavespeed".to_string(),
@@ -276,7 +289,13 @@ impl Provider for WavespeedProvider {
                     });
                 }
                 status => {
-                    tracing::debug!("wavespeed: task {} status: {} (attempt {}/{})", task_id, status, attempt + 1, MAX_ATTEMPTS);
+                    tracing::debug!(
+                        "wavespeed: task {} status: {} (attempt {}/{})",
+                        task_id,
+                        status,
+                        attempt + 1,
+                        MAX_ATTEMPTS
+                    );
                 }
             }
         }
@@ -329,7 +348,10 @@ mod tests {
         let provider = WavespeedProvider::new();
         let apps = provider.static_apps();
         let nb2 = apps.iter().find(|a| a.id == "google/nano-banana-2");
-        assert!(nb2.is_some(), "static apps should include google/nano-banana-2");
+        assert!(
+            nb2.is_some(),
+            "static apps should include google/nano-banana-2"
+        );
         let nb2 = nb2.unwrap();
         assert_eq!(nb2.category, AppCategory::Image);
     }
@@ -356,7 +378,9 @@ mod tests {
     fn test_validate_config_with_api_key() {
         let provider = WavespeedProvider::new();
         let mut config = ProviderConfig::default();
-        config.credentials.insert("api_key".to_string(), "test-key".to_string());
+        config
+            .credentials
+            .insert("api_key".to_string(), "test-key".to_string());
         assert!(provider.validate_config(&config).is_ok());
     }
 

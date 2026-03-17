@@ -145,6 +145,7 @@ Release Please reads these commit messages to auto-generate `CHANGELOG.md` and v
 
 | Workflow | Trigger | What it does |
 |---|---|---|
+| `ci.yml` | pull request / push to `main` | Builds, tests, lints (`cargo build`, `cargo test`, `cargo clippy`, `cargo fmt`) on Linux, macOS, Windows |
 | `release-please.yml` | push to `main` | Opens/updates a Release PR; on merge creates a GitHub Release |
 | `release.yml` | GitHub Release published | Builds `infs` for 5 targets; uploads binaries as release assets |
 

@@ -1,9 +1,11 @@
-use async_trait::async_trait;
-use serde::Deserialize;
+use super::Provider;
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
-use crate::types::{AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse};
-use super::Provider;
+use crate::types::{
+    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse,
+};
+use async_trait::async_trait;
+use serde::Deserialize;
 
 pub struct FalAiProvider {
     descriptor: ProviderDescriptor,
@@ -184,8 +186,7 @@ impl Provider for FalAiProvider {
             .models
             .into_iter()
             .map(|model| {
-                let category =
-                    map_fal_category(model.metadata.category.as_deref().unwrap_or(""));
+                let category = map_fal_category(model.metadata.category.as_deref().unwrap_or(""));
                 AppDescriptor {
                     id: model.endpoint_id,
                     provider_id: "falai".to_string(),
@@ -209,14 +210,15 @@ impl Provider for FalAiProvider {
         input: serde_json::Value,
         config: &ProviderConfig,
     ) -> Result<RunResponse, InfsError> {
-        let api_key = config.get_api_key()
+        let api_key = config
+            .get_api_key()
             .ok_or_else(|| InfsError::ProviderNotConfigured("falai".to_string()))?;
 
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(30))
             .connect_timeout(std::time::Duration::from_secs(10))
             .build()
-            .map_err(|e| InfsError::NetworkError(e))?;
+            .map_err(InfsError::NetworkError)?;
 
         // Step 1: Submit the request via POST https://queue.fal.run/<app_id>
         let submit_url = format!("https://queue.fal.run/{}", app_id);
@@ -282,10 +284,8 @@ impl Provider for FalAiProvider {
             match status_data.status.as_str() {
                 "COMPLETED" => {
                     // Step 3: Fetch the result
-                    let result_url = format!(
-                        "https://queue.fal.run/{}/requests/{}",
-                        app_id, request_id
-                    );
+                    let result_url =
+                        format!("https://queue.fal.run/{}/requests/{}", app_id, request_id);
                     let result_response = client
                         .get(&result_url)
                         .header("Authorization", format!("Key {}", api_key))
@@ -510,7 +510,9 @@ mod tests {
     fn test_validate_config_with_api_key() {
         let provider = FalAiProvider::new();
         let mut config = ProviderConfig::default();
-        config.credentials.insert("api_key".to_string(), "test-key".to_string());
+        config
+            .credentials
+            .insert("api_key".to_string(), "test-key".to_string());
         assert!(provider.validate_config(&config).is_ok());
     }
 }
