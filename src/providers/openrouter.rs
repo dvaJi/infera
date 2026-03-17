@@ -1,9 +1,11 @@
-use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use super::Provider;
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
-use crate::types::{AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse, UsageInfo};
-use super::Provider;
+use crate::types::{
+    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse, UsageInfo,
+};
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
 pub struct OpenRouterProvider {
     descriptor: ProviderDescriptor,
@@ -190,7 +192,8 @@ impl Provider for OpenRouterProvider {
         input: serde_json::Value,
         config: &ProviderConfig,
     ) -> Result<RunResponse, InfsError> {
-        let api_key = config.get_api_key()
+        let api_key = config
+            .get_api_key()
             .ok_or_else(|| InfsError::ProviderNotConfigured("openrouter".to_string()))?;
 
         // Normalize input: accept {"prompt": "..."} or {"messages": [...]}
@@ -203,7 +206,7 @@ impl Provider for OpenRouterProvider {
             serde_json::from_value(messages_val.clone())?
         } else {
             return Err(InfsError::InvalidInput(
-                "Input must have 'prompt' string or 'messages' array".to_string()
+                "Input must have 'prompt' string or 'messages' array".to_string(),
             ));
         };
 
@@ -224,7 +227,10 @@ impl Provider for OpenRouterProvider {
 
         let status = response.status();
         if !status.is_success() {
-            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unknown error".to_string());
             return Err(InfsError::ApiError {
                 provider: "openrouter".to_string(),
                 status: status.as_u16(),
@@ -234,7 +240,8 @@ impl Provider for OpenRouterProvider {
 
         let completion: ChatCompletionResponse = response.json().await?;
 
-        let content = completion.choices
+        let content = completion
+            .choices
             .into_iter()
             .next()
             .map(|c| c.message.content)

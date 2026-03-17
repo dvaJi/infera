@@ -1,12 +1,12 @@
-pub mod provider;
 pub mod app;
 pub mod config;
 pub mod doctor;
+pub mod provider;
 
-use clap::{Parser, Subcommand};
-use provider::ProviderCommands;
 use app::AppCommands;
+use clap::{Parser, Subcommand};
 use config::ConfigCommands;
+use provider::ProviderCommands;
 
 #[derive(Parser)]
 #[command(

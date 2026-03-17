@@ -1,10 +1,10 @@
-mod cli;
-mod error;
-mod config;
-mod providers;
-mod catalog;
-mod types;
 mod auth;
+mod catalog;
+mod cli;
+mod config;
+mod error;
+mod providers;
+mod types;
 
 use anyhow::Result;
 use clap::Parser;
@@ -21,12 +21,12 @@ async fn main() -> Result<()> {
         .init();
 
     let cli = Cli::parse();
-    
+
     if let Err(e) = run(cli).await {
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }
-    
+
     Ok(())
 }
 

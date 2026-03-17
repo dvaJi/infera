@@ -1,9 +1,11 @@
-use async_trait::async_trait;
-use serde::Deserialize;
+use super::Provider;
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
-use crate::types::{AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse};
-use super::Provider;
+use crate::types::{
+    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse,
+};
+use async_trait::async_trait;
+use serde::Deserialize;
 
 pub struct ReplicateProvider {
     descriptor: ProviderDescriptor,
@@ -16,7 +18,13 @@ impl ReplicateProvider {
                 id: "replicate".to_string(),
                 display_name: "Replicate".to_string(),
                 description: "Run AI models in the cloud".to_string(),
-                categories: vec![AppCategory::Image, AppCategory::Video, AppCategory::Audio, AppCategory::Llm, AppCategory::Other],
+                categories: vec![
+                    AppCategory::Image,
+                    AppCategory::Video,
+                    AppCategory::Audio,
+                    AppCategory::Llm,
+                    AppCategory::Other,
+                ],
                 website: "https://replicate.com".to_string(),
                 api_key_help_url: "https://replicate.com/account/api-tokens".to_string(),
             },
@@ -37,7 +45,8 @@ impl ReplicateProvider {
                 id: "black-forest-labs/flux-dev".to_string(),
                 provider_id: "replicate".to_string(),
                 display_name: "FLUX Dev".to_string(),
-                description: "12 billion parameter flow transformer for image generation".to_string(),
+                description: "12 billion parameter flow transformer for image generation"
+                    .to_string(),
                 category: AppCategory::Image,
                 tags: vec!["flux".to_string(), "image".to_string()],
             },
@@ -97,7 +106,10 @@ fn parse_replicate_output(output: Option<serde_json::Value>) -> RunOutput {
                 .collect();
             if strings.len() == arr.len() {
                 // If any element looks like a URL, treat the whole array as file URLs
-                if strings.iter().any(|s| s.starts_with("http://") || s.starts_with("https://")) {
+                if strings
+                    .iter()
+                    .any(|s| s.starts_with("http://") || s.starts_with("https://"))
+                {
                     RunOutput::ImageUrls(strings)
                 } else {
                     // LLM streaming output — token chunks joined together
@@ -113,17 +125,25 @@ fn parse_replicate_output(output: Option<serde_json::Value>) -> RunOutput {
 
 fn infer_replicate_category(owner: &str, name: &str, description: &str) -> AppCategory {
     let text = format!("{} {} {}", owner, name, description).to_lowercase();
-    if text.contains("image") || text.contains("photo") || text.contains("picture")
-        || text.contains("flux") || text.contains("stable-diffusion") || text.contains("diffusion")
-        || text.contains("midjourney") || text.contains("controlnet")
+    if text.contains("image")
+        || text.contains("photo")
+        || text.contains("picture")
+        || text.contains("flux")
+        || text.contains("stable-diffusion")
+        || text.contains("diffusion")
+        || text.contains("midjourney")
+        || text.contains("controlnet")
     {
         AppCategory::Image
     } else if text.contains("video") {
         AppCategory::Video
     } else if text.contains("audio") || text.contains("speech") || text.contains("music") {
         AppCategory::Audio
-    } else if text.contains("language") || text.contains("llm") || text.contains("gpt")
-        || text.contains("chat") || text.contains("text generation")
+    } else if text.contains("language")
+        || text.contains("llm")
+        || text.contains("gpt")
+        || text.contains("chat")
+        || text.contains("text generation")
     {
         AppCategory::Llm
     } else {
@@ -209,7 +229,8 @@ impl Provider for ReplicateProvider {
         input: serde_json::Value,
         config: &ProviderConfig,
     ) -> Result<RunResponse, InfsError> {
-        let api_key = config.get_api_key()
+        let api_key = config
+            .get_api_key()
             .ok_or_else(|| InfsError::ProviderNotConfigured("replicate".to_string()))?;
 
         // app_id is "owner/name" (e.g. "black-forest-labs/flux-schnell")
@@ -242,7 +263,11 @@ impl Provider for ReplicateProvider {
         let create_status = create_response.status();
         if !create_status.is_success() {
             let body = create_response.text().await.unwrap_or_default();
-            tracing::warn!("replicate: create prediction returned {}: {}", create_status, body);
+            tracing::warn!(
+                "replicate: create prediction returned {}: {}",
+                create_status,
+                body
+            );
             return Err(InfsError::ApiError {
                 provider: "replicate".to_string(),
                 status: create_status.as_u16(),
@@ -254,10 +279,7 @@ impl Provider for ReplicateProvider {
         tracing::debug!("replicate: created prediction {}", prediction.id);
 
         // Step 2: Poll until succeeded, failed, or canceled
-        let prediction_url = format!(
-            "https://api.replicate.com/v1/predictions/{}",
-            prediction.id
-        );
+        let prediction_url = format!("https://api.replicate.com/v1/predictions/{}", prediction.id);
         // Poll up to 150 times with 2-second intervals (~5 minutes total)
         let max_polls = 150;
         for _ in 0..max_polls {
@@ -338,7 +360,10 @@ mod tests {
         let d = provider.descriptor();
         assert_eq!(d.id, "replicate");
         assert_eq!(d.display_name, "Replicate");
-        assert_eq!(d.api_key_help_url, "https://replicate.com/account/api-tokens");
+        assert_eq!(
+            d.api_key_help_url,
+            "https://replicate.com/account/api-tokens"
+        );
     }
 
     #[test]

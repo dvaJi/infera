@@ -1,14 +1,16 @@
-use serde::{Deserialize, Serialize};
 use crate::error::InfsError;
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct ProviderId(pub String);
 
+#[allow(dead_code)]
 impl ProviderId {
     pub fn new(s: impl Into<String>) -> Self {
         ProviderId(s.into())
     }
-    
+
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -128,6 +130,7 @@ impl std::fmt::Display for ProviderConnectionStatus {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct RunRequest {
     pub app_id: String,
     pub provider_id: String,
@@ -167,7 +170,7 @@ mod tests {
         assert_eq!(app_id.provider, "openrouter");
         assert_eq!(app_id.app, "anthropic/claude-sonnet-4-5");
     }
-    
+
     #[test]
     fn test_app_id_parse_complex() {
         // openrouter apps have slashes in the app part
@@ -175,30 +178,33 @@ mod tests {
         assert_eq!(app_id.provider, "openrouter");
         assert_eq!(app_id.app, "openai/gpt-4o");
     }
-    
+
     #[test]
     fn test_app_id_parse_invalid_no_slash() {
         assert!(AppId::parse("invalid-format").is_err());
     }
-    
+
     #[test]
     fn test_app_id_parse_empty() {
         assert!(AppId::parse("").is_err());
     }
-    
+
     #[test]
     fn test_app_id_parse_empty_app() {
         assert!(AppId::parse("openrouter/").is_err());
     }
-    
+
     #[test]
     fn test_app_id_parse_empty_provider() {
         assert!(AppId::parse("/gpt-4o").is_err());
     }
-    
+
     #[test]
     fn test_app_id_display() {
-        let app_id = AppId { provider: "openrouter".to_string(), app: "gpt-4o".to_string() };
+        let app_id = AppId {
+            provider: "openrouter".to_string(),
+            app: "gpt-4o".to_string(),
+        };
         assert_eq!(app_id.to_string(), "openrouter/gpt-4o");
     }
 }
