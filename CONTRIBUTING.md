@@ -38,8 +38,8 @@ src/
 │   ├── mod.rs           # Provider async trait
 │   ├── registry.rs      # ProviderRegistry::build_registry()
 │   ├── openrouter.rs    # ✅ Reference implementation
-│   ├── falai.rs         # 🚧 Listing implemented; run_app stubbed
-│   ├── replicate.rs     # 🚧 Listing implemented; run_app stubbed
+│   ├── falai.rs         # ✅ Full implementation (image, async queue)
+│   ├── replicate.rs     # ✅ Full implementation (image, prediction polling)
 │   └── wavespeed.rs     # ✅ Full implementation
 ├── catalog/             # Aggregates listings across providers
 └── cli/                 # Clap-based subcommands
@@ -112,7 +112,7 @@ chore: update dependencies
 1. Branch from `main` and open your PR against `main`.
 2. Keep PRs focused — one logical change per PR.
 3. Make sure `cargo test` passes locally.
-4. Use Conventional Commit messages; each commit on the PR will be included in the changelog.
+4. Use Conventional Commit messages; Release Please reads the commits merged into `main` to build the changelog.
 5. Update `README.md` if you change user-visible behaviour.
 6. Add or update tests for non-trivial logic changes.
 

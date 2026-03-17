@@ -33,7 +33,7 @@ cargo test providers::
 RUST_LOG=debug cargo test
 ```
 
-All tests must pass before submitting any change. The expected pass count is in the 30s; if you see fewer tests passing something is broken.
+All tests must pass before submitting any change.
 
 ## Repository Layout
 
@@ -62,8 +62,8 @@ All tests must pass before submitting any change. The expected pass count is in 
     │   ├── mod.rs                # Provider async trait
     │   ├── registry.rs           # ProviderRegistry::build_registry()
     │   ├── openrouter.rs         # ✅ Reference implementation (LLM)
-    │   ├── falai.rs              # 🚧 Listing works; run_app returns NotImplemented
-    │   ├── replicate.rs          # 🚧 Listing works; run_app returns NotImplemented
+    │   ├── falai.rs              # ✅ Full implementation (image, async queue pattern)
+    │   ├── replicate.rs          # ✅ Full implementation (image, prediction polling)
     │   └── wavespeed.rs          # ✅ Full implementation (image/video)
     ├── catalog/
     │   └── mod.rs                # AppCatalog — aggregates listings across all providers

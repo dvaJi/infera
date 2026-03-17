@@ -62,11 +62,11 @@ jobs:
 
       - name: Build with cross
         if: ${{ matrix.use_cross }}
-        run: cross build --release --target ${{ matrix.target }}
+        run: cross build --release --locked --target ${{ matrix.target }}
 
       - name: Build with cargo
         if: ${{ !matrix.use_cross }}
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Upload release asset
         run: gh release upload "${{ github.event.release.tag_name }}" "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}#${{ matrix.asset_name }}" --clobber

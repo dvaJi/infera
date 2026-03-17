@@ -26,22 +26,22 @@ Every AI provider has its own API shape, auth flow, and SDK. `infs` wraps them b
 | Provider | Category | Status | Auth | App Listing |
 |---|---|---|---|---|
 | OpenRouter | LLM | ✅ Fully implemented | API key | Live from API when connected, static fallback when not |
-| fal.ai | Image | 🚧 Listing live, run not yet implemented | API key | Live from `api.fal.ai/v1/models` when connected |
-| Replicate | Image | 🚧 Listing live, run not yet implemented | API key | Live from `api.replicate.com/v1/models` when connected |
+| fal.ai | Image | ✅ Listing live + run implemented | API key | Live from `api.fal.ai/v1/models` when connected |
+| Replicate | Image | ✅ Listing live + run implemented | API key | Live from `api.replicate.com/v1/models` when connected |
 | WaveSpeed AI | Image/Video | ✅ Listing live + run implemented | API key | Live from `api.wavespeed.ai/api/v3/models` when connected |
 
 **OpenRouter** is the reference implementation: full end-to-end API key auth and model execution work today. When connected, `app list` fetches live from the OpenRouter API.
 
 **WaveSpeed AI** is also fully implemented: model listing and image/video generation both work end-to-end. When connected, `app list` fetches live from the WaveSpeed API, and `app run` submits an inference task and polls for the result.
 
-The image providers (fal.ai, Replicate) support **live model listing** from their APIs when an API key is configured. Execution (`app run`) returns a "not yet implemented" error. When no API key is configured, a static fallback list of well-known models is shown.
+**fal.ai** and **Replicate** are also fully implemented: live model listing and inference both work. `app run` submits a job and polls for the result.
 
 ## Installation
 
 ### Download a pre-built binary (recommended)
 
 Pre-built binaries are attached to every [GitHub Release](https://github.com/dvaJi/infera/releases/latest).
-Download the archive for your platform, extract it, and place the binary somewhere on your `PATH`:
+Download the binary for your platform and place it somewhere on your `PATH`:
 
 | Platform | File |
 |---|---|
@@ -56,8 +56,11 @@ Download the archive for your platform, extract it, and place the binary somewhe
 ```bash
 # Replace <version> and <platform> with the appropriate values
 curl -fsSL https://github.com/dvaJi/infera/releases/download/<version>/infs-<platform> \
-  -o /usr/local/bin/infs
-chmod +x /usr/local/bin/infs
+  -o infs
+chmod +x infs
+sudo mv infs /usr/local/bin/
+# Or install to a user-writable path (no sudo required):
+# mkdir -p ~/.local/bin && mv infs ~/.local/bin/
 ```
 
 ### Build from source
@@ -131,7 +134,7 @@ infs app run wavespeed/wavespeed-ai/flux-schnell --input '{"prompt":"a cat astro
 # Nano Banana 2 text-to-image via WaveSpeed AI
 infs app run wavespeed/google/nano-banana-2 --input '{"prompt":"a serene mountain lake at sunset"}'
 
-# Image generation (scaffolded — will return not-yet-implemented error)
+# Image generation via fal.ai
 infs app run falai/fal-ai/flux/dev --input '{"prompt":"a cat astronaut in space"}'
 ```
 
@@ -170,7 +173,7 @@ fal.ai provides fast, serverless image generation APIs.
 
 **Website:** https://fal.ai  
 **Get an API key:** https://fal.ai/dashboard/keys  
-**Status:** Live model listing from `https://api.fal.ai/v1/models` when connected. `app run` not yet implemented.
+**Status:** ✅ Fully implemented — live model listing and `app run` both work. Submits a job via `POST https://queue.fal.run/<app_id>` and polls for the result.
 
 ### Replicate
 
@@ -178,7 +181,7 @@ Replicate runs machine learning models in the cloud.
 
 **Website:** https://replicate.com  
 **Get an API key:** https://replicate.com/account/api-tokens  
-**Status:** Live model listing from `https://api.replicate.com/v1/models` when connected. `app run` not yet implemented.
+**Status:** ✅ Fully implemented — live model listing and `app run` both work. Creates a prediction via the Replicate API and polls until complete.
 
 ### WaveSpeed AI
 
@@ -284,8 +287,8 @@ src/
 │   ├── mod.rs           # Provider trait
 │   ├── registry.rs      # ProviderRegistry
 │   ├── openrouter.rs    # ✅ Full implementation
-│   ├── falai.rs         # 🚧 Scaffolded
-│   ├── replicate.rs     # 🚧 Scaffolded
+│   ├── falai.rs         # ✅ Full implementation (image, async queue)
+│   ├── replicate.rs     # ✅ Full implementation (image, prediction polling)
 │   └── wavespeed.rs     # ✅ Full implementation
 ├── catalog/             # App catalog (aggregates provider listings)
 └── cli/                 # CLI commands
@@ -331,15 +334,6 @@ pub fn build_registry() -> ProviderRegistry {
 }
 ```
 
-### Completing provider execution
-
-The image providers (fal.ai, Replicate, WaveSpeed) already fetch live model listings from their APIs. What remains is execution. Each file has a `run_app` stub returning `InfsError::NotImplemented`. To complete them:
-
-1. Read the provider's API documentation
-2. Add the request/response types for execution
-3. Implement the HTTP call in `run_app`
-4. Add tests
-
 ### Running tests
 
 ```bash
@@ -354,7 +348,6 @@ cargo test
 
 ## Known Limitations
 
-- Image provider execution (fal.ai, Replicate) is not yet implemented
 - Model listing requires an API key for fal.ai, Replicate, and WaveSpeed; a static fallback is shown when not connected
 - Credentials are stored in a plain TOML file, not the OS keychain
 - No streaming support for LLM responses
@@ -364,8 +357,8 @@ cargo test
 
 ## Roadmap
 
-- [ ] Complete fal.ai execution (image generation via API)
-- [ ] Complete Replicate execution
+- [x] Complete fal.ai execution (image generation via API)
+- [x] Complete Replicate execution
 - [x] Complete WaveSpeed AI execution
 - [ ] OS keychain integration for credential storage (`keyring` crate)
 - [ ] `--json` output flag for machine-friendly output
