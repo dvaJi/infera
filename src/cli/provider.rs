@@ -32,25 +32,20 @@ pub enum ProviderSubcommands {
     },
 }
 
-pub async fn handle(cmd: ProviderCommands) -> Result<()> {
+pub async fn handle(cmd: ProviderCommands, json: bool) -> Result<()> {
     match cmd.command {
-        ProviderSubcommands::List => list_providers().await,
+        ProviderSubcommands::List => list_providers(json).await,
         ProviderSubcommands::Connect { provider } => connect_provider(&provider).await,
         ProviderSubcommands::Disconnect { provider } => disconnect_provider(&provider).await,
-        ProviderSubcommands::Show { provider } => show_provider(&provider).await,
+        ProviderSubcommands::Show { provider } => show_provider(&provider, json).await,
     }
 }
 
-async fn list_providers() -> Result<()> {
+async fn list_providers(json: bool) -> Result<()> {
     let registry = build_registry();
     let app_config = config::load_config()?;
 
-    println!(
-        "{:<15} {:<25} {:<15} {:<30}",
-        "ID", "NAME", "STATUS", "CATEGORIES"
-    );
-    println!("{}", "-".repeat(90));
-
+    let mut rows = Vec::new();
     for provider in registry.list_providers() {
         let d = provider.descriptor();
         let prov_config = app_config.providers.get(&d.id);
@@ -59,15 +54,38 @@ async fn list_providers() -> Result<()> {
         } else {
             ProviderConnectionStatus::NotConnected
         };
-
         let categories: Vec<String> = d.categories.iter().map(|c| c.to_string()).collect();
+        rows.push((d.id.clone(), d.display_name.clone(), status, categories));
+    }
+
+    if json {
+        let json_rows: Vec<serde_json::Value> = rows
+            .iter()
+            .map(|(id, name, status, cats)| {
+                serde_json::json!({
+                    "id": id,
+                    "name": name,
+                    "status": status.to_string(),
+                    "categories": cats,
+                })
+            })
+            .collect();
+        println!("{}", serde_json::to_string_pretty(&json_rows)?);
+    } else {
         println!(
             "{:<15} {:<25} {:<15} {:<30}",
-            d.id,
-            d.display_name,
-            status,
-            categories.join(", ")
+            "ID", "NAME", "STATUS", "CATEGORIES"
         );
+        println!("{}", "-".repeat(90));
+        for (id, name, status, cats) in &rows {
+            println!(
+                "{:<15} {:<25} {:<15} {:<30}",
+                id,
+                name,
+                status,
+                cats.join(", ")
+            );
+        }
     }
 
     Ok(())
@@ -119,7 +137,7 @@ async fn disconnect_provider(provider_id: &str) -> Result<()> {
     Ok(())
 }
 
-async fn show_provider(provider_id: &str) -> Result<()> {
+async fn show_provider(provider_id: &str, json: bool) -> Result<()> {
     let registry = build_registry();
     let provider = registry.find_provider(provider_id)?;
     let d = provider.descriptor();
@@ -132,40 +150,72 @@ async fn show_provider(provider_id: &str) -> Result<()> {
         ProviderConnectionStatus::NotConnected
     };
 
-    println!("Provider: {}", d.display_name);
-    println!("ID:       {}", d.id);
-    println!("Status:   {}", status);
-    println!("Website:  {}", d.website);
-    println!();
-    println!("Description:");
-    println!("  {}", d.description);
-    println!();
-
-    let categories: Vec<String> = d.categories.iter().map(|c| c.to_string()).collect();
-    println!("Categories: {}", categories.join(", "));
-
-    let auth_methods: Vec<String> = provider
-        .supported_auth_methods()
-        .iter()
-        .map(|m| m.to_string())
-        .collect();
-    println!("Auth:       {}", auth_methods.join(", "));
-
-    println!();
     let prov_config_for_list = app_config.providers.get(&d.id).cloned().unwrap_or_default();
-    match provider.list_apps(&prov_config_for_list).await {
-        Ok(apps) => {
-            println!("Apps ({}): ", apps.len());
-            for app in &apps {
-                println!("  - {} ({})", app.display_name, app.id);
+    let apps_result = provider.list_apps(&prov_config_for_list).await;
+
+    if json {
+        let apps_json: serde_json::Value = match apps_result {
+            Ok(apps) => apps
+                .iter()
+                .map(|a| {
+                    serde_json::json!({
+                        "id": a.id,
+                        "full_id": a.full_id(),
+                        "name": a.display_name,
+                        "category": a.category.to_string(),
+                    })
+                })
+                .collect(),
+            Err(_) => serde_json::Value::Null,
+        };
+        let categories: Vec<String> = d.categories.iter().map(|c| c.to_string()).collect();
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "id": d.id,
+                "name": d.display_name,
+                "description": d.description,
+                "status": status.to_string(),
+                "website": d.website,
+                "categories": categories,
+                "apps": apps_json,
+            }))?
+        );
+    } else {
+        println!("Provider: {}", d.display_name);
+        println!("ID:       {}", d.id);
+        println!("Status:   {}", status);
+        println!("Website:  {}", d.website);
+        println!();
+        println!("Description:");
+        println!("  {}", d.description);
+        println!();
+
+        let categories: Vec<String> = d.categories.iter().map(|c| c.to_string()).collect();
+        println!("Categories: {}", categories.join(", "));
+
+        let auth_methods: Vec<String> = provider
+            .supported_auth_methods()
+            .iter()
+            .map(|m| m.to_string())
+            .collect();
+        println!("Auth:       {}", auth_methods.join(", "));
+
+        println!();
+        match apps_result {
+            Ok(apps) => {
+                println!("Apps ({}): ", apps.len());
+                for app in &apps {
+                    println!("  - {} ({})", app.display_name, app.id);
+                }
             }
-        }
-        Err(e) => {
-            eprintln!("Warning: could not fetch app list: {}", e);
-            println!(
-                "Apps: (unavailable — run `infs provider connect {}` to see live models)",
-                provider_id
-            );
+            Err(e) => {
+                eprintln!("Warning: could not fetch app list: {}", e);
+                println!(
+                    "Apps: (unavailable — run `infs provider connect {}` to see live models)",
+                    provider_id
+                );
+            }
         }
     }
 

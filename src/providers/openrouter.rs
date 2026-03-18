@@ -1,6 +1,7 @@
 use super::Provider;
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
+use crate::retry::with_retry;
 use crate::types::{
     AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse, UsageInfo,
 };
@@ -93,7 +94,7 @@ struct OpenRouterModelsResponse {
     data: Vec<OpenRouterModel>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct ChatMessage {
     role: String,
     content: String,
@@ -129,6 +130,23 @@ struct OpenRouterUsage {
     total_tokens: Option<u64>,
 }
 
+/// Extract chat messages from the normalized input JSON.
+/// Accepts `{"prompt": "..."}` or `{"messages": [...]}`.
+fn build_messages(input: &serde_json::Value) -> Result<Vec<ChatMessage>, InfsError> {
+    if let Some(prompt) = input.get("prompt").and_then(|v| v.as_str()) {
+        Ok(vec![ChatMessage {
+            role: "user".to_string(),
+            content: prompt.to_string(),
+        }])
+    } else if let Some(messages_val) = input.get("messages") {
+        Ok(serde_json::from_value(messages_val.clone())?)
+    } else {
+        Err(InfsError::InvalidInput(
+            "Input must have 'prompt' string or 'messages' array".to_string(),
+        ))
+    }
+}
+
 #[async_trait]
 impl Provider for OpenRouterProvider {
     fn descriptor(&self) -> &ProviderDescriptor {
@@ -151,39 +169,54 @@ impl Provider for OpenRouterProvider {
             }
         };
 
-        let client = reqwest::Client::new();
-        let response = client
-            .get("https://openrouter.ai/api/v1/models")
-            .header("Authorization", format!("Bearer {}", api_key))
-            .header("HTTP-Referer", "https://github.com/dvaJi/infs")
-            .header("X-Title", "infs")
-            .send()
-            .await?;
+        with_retry(3, || {
+            let api_key = api_key.clone();
+            async move {
+                let client = reqwest::Client::new();
+                let response = client
+                    .get("https://openrouter.ai/api/v1/models")
+                    .header("Authorization", format!("Bearer {}", api_key))
+                    .header("HTTP-Referer", "https://github.com/dvaJi/infs")
+                    .header("X-Title", "infs")
+                    .send()
+                    .await?;
 
-        if !response.status().is_success() {
+                if !response.status().is_success() {
+                    let status = response.status().as_u16();
+                    let message = response
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Unknown error".to_string());
+                    return Err(InfsError::ApiError {
+                        provider: "openrouter".to_string(),
+                        status,
+                        message,
+                    });
+                }
+
+                let models_response: OpenRouterModelsResponse = response.json().await?;
+                let apps = models_response
+                    .data
+                    .into_iter()
+                    .map(|m| AppDescriptor {
+                        id: m.id,
+                        provider_id: "openrouter".to_string(),
+                        display_name: m.name,
+                        description: m.description,
+                        category: AppCategory::Llm,
+                        tags: vec![],
+                    })
+                    .collect();
+                Ok(apps)
+            }
+        })
+        .await
+        .or_else(|_| {
             tracing::warn!(
-                "openrouter: /api/v1/models returned {}, falling back to static list",
-                response.status()
+                "openrouter: /api/v1/models failed after retries, falling back to static list"
             );
-            return Ok(self.static_apps());
-        }
-
-        let models_response: OpenRouterModelsResponse = response.json().await?;
-
-        let apps = models_response
-            .data
-            .into_iter()
-            .map(|m| AppDescriptor {
-                id: m.id,
-                provider_id: "openrouter".to_string(),
-                display_name: m.name,
-                description: m.description,
-                category: AppCategory::Llm,
-                tags: vec![],
-            })
-            .collect();
-
-        Ok(apps)
+            Ok(self.static_apps())
+        })
     }
 
     async fn run_app(
@@ -194,34 +227,109 @@ impl Provider for OpenRouterProvider {
     ) -> Result<RunResponse, InfsError> {
         let api_key = config
             .get_api_key()
-            .ok_or_else(|| InfsError::ProviderNotConfigured("openrouter".to_string()))?;
+            .ok_or_else(|| InfsError::ProviderNotConfigured("openrouter".to_string()))?
+            .to_string();
 
         // Normalize input: accept {"prompt": "..."} or {"messages": [...]}
-        let messages = if let Some(prompt) = input.get("prompt").and_then(|v| v.as_str()) {
-            vec![ChatMessage {
-                role: "user".to_string(),
-                content: prompt.to_string(),
-            }]
-        } else if let Some(messages_val) = input.get("messages") {
-            serde_json::from_value(messages_val.clone())?
-        } else {
-            return Err(InfsError::InvalidInput(
-                "Input must have 'prompt' string or 'messages' array".to_string(),
-            ));
-        };
+        let messages = build_messages(&input)?;
 
         let request = ChatCompletionRequest {
             model: app_id.to_string(),
             messages,
         };
 
+        with_retry(3, || {
+            let api_key = api_key.clone();
+            let request = ChatCompletionRequest {
+                model: request.model.clone(),
+                messages: request.messages.clone(),
+            };
+            async move {
+                let client = reqwest::Client::new();
+                let response = client
+                    .post("https://openrouter.ai/api/v1/chat/completions")
+                    .header("Authorization", format!("Bearer {}", api_key))
+                    .header("HTTP-Referer", "https://github.com/dvaJi/infs")
+                    .header("X-Title", "infs")
+                    .json(&request)
+                    .send()
+                    .await?;
+
+                let status = response.status();
+                if !status.is_success() {
+                    let error_text = response
+                        .text()
+                        .await
+                        .unwrap_or_else(|_| "Unknown error".to_string());
+                    return Err(InfsError::ApiError {
+                        provider: "openrouter".to_string(),
+                        status: status.as_u16(),
+                        message: error_text,
+                    });
+                }
+
+                let completion: ChatCompletionResponse = response.json().await?;
+                let content = completion
+                    .choices
+                    .into_iter()
+                    .next()
+                    .map(|c| c.message.content)
+                    .unwrap_or_default();
+
+                Ok(RunResponse {
+                    output: RunOutput::Text(content),
+                    model: completion.model.unwrap_or_else(|| app_id.to_string()),
+                    provider: "openrouter".to_string(),
+                    usage: completion.usage.map(|u| UsageInfo {
+                        prompt_tokens: u.prompt_tokens,
+                        completion_tokens: u.completion_tokens,
+                        total_tokens: u.total_tokens,
+                    }),
+                })
+            }
+        })
+        .await
+    }
+
+    fn validate_config(&self, config: &ProviderConfig) -> Result<(), InfsError> {
+        if config.get_api_key().is_none() {
+            return Err(InfsError::ProviderNotConfigured("openrouter".to_string()));
+        }
+        Ok(())
+    }
+
+    fn supports_streaming(&self) -> bool {
+        true
+    }
+
+    async fn stream_app(
+        &self,
+        app_id: &str,
+        input: serde_json::Value,
+        config: &ProviderConfig,
+    ) -> Result<(), InfsError> {
+        use std::io::Write;
+
+        let api_key = config
+            .get_api_key()
+            .ok_or_else(|| InfsError::ProviderNotConfigured("openrouter".to_string()))?
+            .to_string();
+
+        let messages = build_messages(&input)?;
+
+        let request_body = serde_json::json!({
+            "model": app_id,
+            "messages": messages,
+            "stream": true,
+        });
+
         let client = reqwest::Client::new();
-        let response = client
+        let mut response = client
             .post("https://openrouter.ai/api/v1/chat/completions")
             .header("Authorization", format!("Bearer {}", api_key))
             .header("HTTP-Referer", "https://github.com/dvaJi/infs")
             .header("X-Title", "infs")
-            .json(&request)
+            .json(&request_body)
             .send()
             .await?;
 
@@ -238,31 +346,46 @@ impl Provider for OpenRouterProvider {
             });
         }
 
-        let completion: ChatCompletionResponse = response.json().await?;
+        // Collect content to flush per-chunk; avoid holding StdoutLock across await points.
+        let mut buffer = String::new();
+        let mut done = false;
 
-        let content = completion
-            .choices
-            .into_iter()
-            .next()
-            .map(|c| c.message.content)
-            .unwrap_or_default();
+        while !done {
+            match response.chunk().await? {
+                None => break,
+                Some(chunk) => {
+                    buffer.push_str(&String::from_utf8_lossy(&chunk));
+                    let mut pending = String::new();
+                    while let Some(pos) = buffer.find('\n') {
+                        let line = buffer[..pos].trim_end_matches('\r').to_string();
+                        buffer.drain(..=pos);
 
-        Ok(RunResponse {
-            output: RunOutput::Text(content),
-            model: completion.model.unwrap_or_else(|| app_id.to_string()),
-            provider: "openrouter".to_string(),
-            usage: completion.usage.map(|u| UsageInfo {
-                prompt_tokens: u.prompt_tokens,
-                completion_tokens: u.completion_tokens,
-                total_tokens: u.total_tokens,
-            }),
-        })
-    }
-
-    fn validate_config(&self, config: &ProviderConfig) -> Result<(), InfsError> {
-        if config.get_api_key().is_none() {
-            return Err(InfsError::ProviderNotConfigured("openrouter".to_string()));
+                        if let Some(data) = line.strip_prefix("data: ") {
+                            let data = data.trim();
+                            if data == "[DONE]" {
+                                done = true;
+                                break;
+                            }
+                            if let Ok(json) = serde_json::from_str::<serde_json::Value>(data) {
+                                if let Some(content) =
+                                    json["choices"][0]["delta"]["content"].as_str()
+                                {
+                                    pending.push_str(content);
+                                }
+                            }
+                        }
+                    }
+                    // Flush collected content for this chunk in one lock/unlock cycle.
+                    if !pending.is_empty() {
+                        let stdout = std::io::stdout();
+                        let mut out = stdout.lock();
+                        write!(out, "{}", pending)?;
+                        out.flush()?;
+                    }
+                }
+            }
         }
+        writeln!(std::io::stdout())?;
         Ok(())
     }
 }
@@ -272,24 +395,9 @@ mod tests {
     use super::*;
     use serde_json::json;
 
-    fn normalize_input(input: serde_json::Value) -> Result<Vec<ChatMessage>, InfsError> {
-        if let Some(prompt) = input.get("prompt").and_then(|v| v.as_str()) {
-            Ok(vec![ChatMessage {
-                role: "user".to_string(),
-                content: prompt.to_string(),
-            }])
-        } else if let Some(messages_val) = input.get("messages") {
-            Ok(serde_json::from_value(messages_val.clone())?)
-        } else {
-            Err(InfsError::InvalidInput(
-                "Input must have 'prompt' string or 'messages' array".to_string(),
-            ))
-        }
-    }
-
     #[test]
     fn test_input_prompt_normalization() {
-        let messages = normalize_input(json!({"prompt": "Hello, world!"})).unwrap();
+        let messages = build_messages(&json!({"prompt": "Hello, world!"})).unwrap();
         assert_eq!(messages.len(), 1);
         assert_eq!(messages[0].role, "user");
         assert_eq!(messages[0].content, "Hello, world!");
@@ -303,7 +411,7 @@ mod tests {
                 {"role": "user", "content": "Hi"}
             ]
         });
-        let messages = normalize_input(input).unwrap();
+        let messages = build_messages(&input).unwrap();
         assert_eq!(messages.len(), 2);
         assert_eq!(messages[0].role, "system");
         assert_eq!(messages[1].role, "user");
@@ -311,7 +419,7 @@ mod tests {
 
     #[test]
     fn test_input_invalid_returns_error() {
-        let result = normalize_input(json!({"something_else": "value"}));
+        let result = build_messages(&json!({"something_else": "value"}));
         assert!(result.is_err());
         if let Err(InfsError::InvalidInput(msg)) = result {
             assert!(msg.contains("'prompt'"));
@@ -337,5 +445,11 @@ mod tests {
         for app in &apps {
             assert_eq!(app.provider_id, "openrouter");
         }
+    }
+
+    #[test]
+    fn test_supports_streaming() {
+        let provider = OpenRouterProvider::new();
+        assert!(provider.supports_streaming());
     }
 }

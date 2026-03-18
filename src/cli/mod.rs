@@ -1,10 +1,12 @@
 pub mod app;
+pub mod completions;
 pub mod config;
 pub mod doctor;
 pub mod provider;
 
 use app::AppCommands;
 use clap::{Parser, Subcommand};
+use clap_complete::Shell;
 use config::ConfigCommands;
 use provider::ProviderCommands;
 
@@ -16,6 +18,10 @@ use provider::ProviderCommands;
     long_about = "infs lets you connect to AI providers and run models from a single CLI"
 )]
 pub struct Cli {
+    /// Output results as JSON (machine-readable)
+    #[arg(long, global = true)]
+    pub json: bool,
+
     #[command(subcommand)]
     pub command: Commands,
 }
@@ -30,4 +36,9 @@ pub enum Commands {
     Config(ConfigCommands),
     /// Check system and provider health
     Doctor,
+    /// Generate shell completion scripts
+    Completions {
+        /// Shell to generate completions for (bash, zsh, fish, powershell, elvish)
+        shell: Shell,
+    },
 }
