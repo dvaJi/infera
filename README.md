@@ -349,25 +349,25 @@ cargo test
 ## Known Limitations
 
 - Model listing requires an API key for fal.ai, Replicate, and WaveSpeed; a static fallback is shown when not connected
-- Credentials are stored in a plain TOML file, not the OS keychain
 - No streaming support for LLM responses
 - No file input/output for image generation artifacts
-- No `--json` output mode yet
-- No retry/backoff on network errors
 
 ## Roadmap
 
-- [x] Complete fal.ai execution (image generation via API)
-- [x] Complete Replicate execution
-- [x] Complete WaveSpeed AI execution
-- [ ] OS keychain integration for credential storage (`keyring` crate)
-- [ ] `--json` output flag for machine-friendly output
+See [ROADMAP.md](ROADMAP.md) for the full roadmap. Summary:
+
+**Completed:**
+- [x] fal.ai, Replicate, and WaveSpeed AI execution
+- [x] OS keychain integration for credential storage (`keyring` crate)
+- [x] `--json` output flag for machine-friendly output
+- [x] Shell completion scripts (`infs completions bash/zsh/fish/powershell/elvish`)
+- [x] Retry logic with exponential backoff
+
+**Planned:**
 - [ ] Streaming LLM responses
 - [ ] Paginated model listing for providers returning large catalogs
 - [ ] File output for image generation (download to local file)
 - [ ] File input support
-- [ ] Retry logic with exponential backoff
-- [ ] Shell completion scripts (`infs completions bash`)
 - [ ] More providers (ElevenLabs, Stability AI, etc.)
 - [ ] OAuth support for providers that require it
 
