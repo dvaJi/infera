@@ -4,6 +4,7 @@ use crate::providers::registry::build_registry;
 use crate::types::AppId;
 use anyhow::Result;
 use clap::{Args, Subcommand};
+use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct AppCommands {
@@ -21,14 +22,34 @@ pub enum AppSubcommands {
         /// Filter by provider
         #[arg(long)]
         provider: Option<String>,
+        /// Page number for paginated output (1-based)
+        #[arg(long, default_value_t = 1)]
+        page: usize,
+        /// Number of results per page
+        #[arg(long, default_value_t = 20)]
+        per_page: usize,
     },
     /// Run an app with JSON input
     Run {
         /// App ID in format provider/app-id (e.g. openrouter/openai/gpt-4o)
         app: String,
         /// Input as JSON string (e.g. '{"prompt": "Hello"}')
+        #[arg(
+            long,
+            short,
+            required_unless_present = "input_file",
+            conflicts_with = "input_file"
+        )]
+        input: Option<String>,
+        /// Read input JSON from a file instead of --input
+        #[arg(long, conflicts_with = "input")]
+        input_file: Option<PathBuf>,
+        /// Stream output token by token (LLM providers only)
+        #[arg(long)]
+        stream: bool,
+        /// Save image output to this file path (image providers only)
         #[arg(long, short)]
-        input: String,
+        output: Option<PathBuf>,
     },
     /// Show app details
     Show {
@@ -37,15 +58,32 @@ pub enum AppSubcommands {
     },
 }
 
-pub async fn handle(cmd: AppCommands) -> Result<()> {
+pub async fn handle(cmd: AppCommands, json: bool) -> Result<()> {
     match cmd.command {
-        AppSubcommands::List { category, provider } => list_apps(category, provider).await,
-        AppSubcommands::Run { app, input } => run_app(app, input).await,
-        AppSubcommands::Show { app } => show_app(app).await,
+        AppSubcommands::List {
+            category,
+            provider,
+            page,
+            per_page,
+        } => list_apps(category, provider, page, per_page, json).await,
+        AppSubcommands::Run {
+            app,
+            input,
+            input_file,
+            stream,
+            output,
+        } => run_app(app, input, input_file, stream, output, json).await,
+        AppSubcommands::Show { app } => show_app(app, json).await,
     }
 }
 
-async fn list_apps(category_filter: Option<String>, provider_filter: Option<String>) -> Result<()> {
+async fn list_apps(
+    category_filter: Option<String>,
+    provider_filter: Option<String>,
+    page: usize,
+    per_page: usize,
+    json: bool,
+) -> Result<()> {
     let registry = build_registry();
     let app_config = config::load_config()?;
     let catalog = Catalog::new(&registry, &app_config);
@@ -61,29 +99,101 @@ async fn list_apps(category_filter: Option<String>, provider_filter: Option<Stri
         catalog.list_all_apps().await
     };
 
-    println!(
-        "{:<45} {:<25} {:<10} DESCRIPTION",
-        "FULL ID", "NAME", "CATEGORY"
-    );
-    println!("{}", "-".repeat(110));
+    let total = apps.len();
 
-    for app in &apps {
-        let full_id = app.full_id();
-        let truncated_desc = truncate_str(&app.description, 40);
+    // Apply pagination.
+    // Clamp total_pages to a minimum of 1 so that page can always be clamped
+    // to 1..=total_pages even when the catalog is empty.
+    let per_page = per_page.max(1);
+    let total_pages = total.div_ceil(per_page).max(1);
+    let page = page.max(1).min(total_pages);
+    let start = (page - 1) * per_page;
+    let page_apps: Vec<_> = apps.iter().skip(start).take(per_page).collect();
+
+    if json {
+        let json_apps: Vec<serde_json::Value> = page_apps
+            .iter()
+            .map(|app| {
+                serde_json::json!({
+                    "full_id": app.full_id(),
+                    "name": app.display_name,
+                    "category": app.category.to_string(),
+                    "description": app.description,
+                    "tags": app.tags,
+                })
+            })
+            .collect();
         println!(
-            "{:<45} {:<25} {:<10} {}",
-            full_id, app.display_name, app.category, truncated_desc
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": total_pages,
+                "apps": json_apps,
+            }))?
         );
-    }
+    } else {
+        println!(
+            "{:<45} {:<25} {:<10} DESCRIPTION",
+            "FULL ID", "NAME", "CATEGORY"
+        );
+        println!("{}", "-".repeat(110));
 
-    eprintln!();
-    eprintln!("Total: {} apps", apps.len());
+        for app in &page_apps {
+            let full_id = app.full_id();
+            let truncated_desc = truncate_str(&app.description, 40);
+            println!(
+                "{:<45} {:<25} {:<10} {}",
+                full_id, app.display_name, app.category, truncated_desc
+            );
+        }
+
+        eprintln!();
+        if total_pages > 1 {
+            eprintln!(
+                "Page {}/{} — showing {}-{} of {} apps",
+                page,
+                total_pages,
+                start + 1,
+                (start + page_apps.len()).min(total),
+                total
+            );
+            if page < total_pages {
+                eprintln!("Use --page {} to see the next page.", page + 1);
+            }
+        } else {
+            eprintln!("Total: {} apps", total);
+        }
+    }
 
     Ok(())
 }
 
-async fn run_app(app_str: String, input_str: String) -> Result<()> {
+async fn run_app(
+    app_str: String,
+    input_arg: Option<String>,
+    input_file: Option<PathBuf>,
+    stream: bool,
+    output: Option<PathBuf>,
+    json: bool,
+) -> Result<()> {
     let app_id = AppId::parse(&app_str)?;
+
+    // Reject the invalid --json + --stream combination up front.
+    if json && stream {
+        anyhow::bail!("--json and --stream cannot be used together");
+    }
+
+    // Resolve input: --input takes precedence, --input-file as alternative
+    let input_str = if let Some(path) = input_file {
+        std::fs::read_to_string(&path)
+            .map_err(|e| anyhow::anyhow!("Failed to read input file '{}': {}", path.display(), e))?
+    } else if let Some(s) = input_arg {
+        s
+    } else {
+        anyhow::bail!("Provide input via --input or --input-file");
+    };
 
     let input: serde_json::Value = serde_json::from_str(&input_str)
         .map_err(|e| crate::error::InfsError::InvalidInput(format!("Invalid JSON input: {}", e)))?;
@@ -100,34 +210,96 @@ async fn run_app(app_str: String, input_str: String) -> Result<()> {
 
     provider.validate_config(&prov_config)?;
 
-    eprintln!("Running {}/{}...", app_id.provider, app_id.app);
+    if !json {
+        eprintln!("Running {}/{}...", app_id.provider, app_id.app);
+    }
 
-    let response = provider.run_app(&app_id.app, input, &prov_config).await?;
-
-    match &response.output {
-        crate::types::RunOutput::Text(text) => {
-            println!("{}", text);
-        }
-        crate::types::RunOutput::ImageUrls(urls) => {
-            for url in urls {
-                println!("{}", url);
-            }
-        }
-        crate::types::RunOutput::Json(val) => {
-            println!("{}", serde_json::to_string_pretty(val)?);
+    // Streaming mode: print tokens as they arrive
+    if stream {
+        if provider.supports_streaming() {
+            provider
+                .stream_app(&app_id.app, input, &prov_config)
+                .await?;
+            return Ok(());
+        } else {
+            eprintln!(
+                "Note: --stream is not supported for provider '{}', using non-streaming mode.",
+                app_id.provider
+            );
         }
     }
 
-    if let Some(usage) = &response.usage {
-        if let Some(total) = usage.total_tokens {
-            eprintln!("Tokens used: {}", total);
+    let response = provider.run_app(&app_id.app, input, &prov_config).await?;
+
+    if json {
+        println!("{}", serde_json::to_string_pretty(&response)?);
+    } else {
+        match &response.output {
+            crate::types::RunOutput::Text(text) => {
+                println!("{}", text);
+            }
+            crate::types::RunOutput::ImageUrls(urls) => {
+                if let Some(out_path) = &output {
+                    save_images(urls, out_path).await?;
+                } else {
+                    for url in urls {
+                        println!("{}", url);
+                    }
+                }
+            }
+            crate::types::RunOutput::Json(val) => {
+                println!("{}", serde_json::to_string_pretty(val)?);
+            }
+        }
+
+        if let Some(usage) = &response.usage {
+            if let Some(total) = usage.total_tokens {
+                eprintln!("Tokens used: {}", total);
+            }
         }
     }
 
     Ok(())
 }
 
-async fn show_app(app_str: String) -> Result<()> {
+/// Download image URLs and save them to local files.
+///
+/// - Single image: saved to `base_path` as-is.
+/// - Multiple images: saved to `{stem}_{i}{ext}` (e.g. `out_0.png`, `out_1.png`).
+async fn save_images(urls: &[String], base_path: &std::path::Path) -> Result<()> {
+    let client = reqwest::Client::new();
+    for (i, url) in urls.iter().enumerate() {
+        let path = if urls.len() == 1 {
+            base_path.to_path_buf()
+        } else {
+            let stem = base_path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("image");
+            let ext = base_path
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| format!(".{}", e))
+                .unwrap_or_default();
+            base_path.with_file_name(format!("{}_{}{}", stem, i, ext))
+        };
+
+        let resp = client.get(url).send().await?;
+        if !resp.status().is_success() {
+            anyhow::bail!(
+                "Failed to download image from '{}': HTTP {}",
+                url,
+                resp.status()
+            );
+        }
+        let bytes = resp.bytes().await?;
+        std::fs::write(&path, &bytes)?;
+        eprintln!("Saved image to: {}", path.display());
+    }
+    Ok(())
+}
+
+async fn show_app(app_str: String, json: bool) -> Result<()> {
     let app_id = AppId::parse(&app_str)?;
 
     let registry = build_registry();
@@ -144,16 +316,30 @@ async fn show_app(app_str: String) -> Result<()> {
             ))
         })?;
 
-    println!("App:      {}", app.display_name);
-    println!("ID:       {}", app.full_id());
-    println!("Category: {}", app.category);
-    println!();
-    println!("Description:");
-    println!("  {}", app.description);
-
-    if !app.tags.is_empty() {
+    if json {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "id": app.id,
+                "full_id": app.full_id(),
+                "name": app.display_name,
+                "category": app.category.to_string(),
+                "description": app.description,
+                "tags": app.tags,
+            }))?
+        );
+    } else {
+        println!("App:      {}", app.display_name);
+        println!("ID:       {}", app.full_id());
+        println!("Category: {}", app.category);
         println!();
-        println!("Tags: {}", app.tags.join(", "));
+        println!("Description:");
+        println!("  {}", app.description);
+
+        if !app.tags.is_empty() {
+            println!();
+            println!("Tags: {}", app.tags.join(", "));
+        }
     }
 
     Ok(())

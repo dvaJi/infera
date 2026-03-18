@@ -4,6 +4,7 @@ mod cli;
 mod config;
 mod error;
 mod providers;
+mod retry;
 mod types;
 
 use anyhow::Result;
@@ -31,10 +32,12 @@ async fn main() -> Result<()> {
 }
 
 async fn run(cli: Cli) -> Result<()> {
+    let json = cli.json;
     match cli.command {
-        Commands::Provider(cmd) => cli::provider::handle(cmd).await,
-        Commands::App(cmd) => cli::app::handle(cmd).await,
+        Commands::Provider(cmd) => cli::provider::handle(cmd, json).await,
+        Commands::App(cmd) => cli::app::handle(cmd, json).await,
         Commands::Config(cmd) => cli::config::handle(cmd).await,
         Commands::Doctor => cli::doctor::handle().await,
+        Commands::Completions { shell } => cli::completions::handle(shell),
     }
 }

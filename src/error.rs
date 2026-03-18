@@ -40,3 +40,14 @@ pub enum InfsError {
         message: String,
     },
 }
+
+impl InfsError {
+    /// Returns true for errors that are likely transient and worth retrying.
+    pub fn is_transient(&self) -> bool {
+        match self {
+            InfsError::NetworkError(_) => true,
+            InfsError::ApiError { status, .. } => *status >= 500,
+            _ => false,
+        }
+    }
+}
