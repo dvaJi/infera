@@ -8,7 +8,7 @@ description: >
   Triggers: image generation, text to image, generate image, flux, stable diffusion,
   sdxl, fal.ai, falai, replicate, wavespeed, ai art, diffusion model, create image,
   render image, image synthesis.
-allowed-tools: Bash(infs *)
+allowed-tools: Bash(infs *) Bash(jq *)
 ---
 
 # infs-image
@@ -106,7 +106,8 @@ Response format:
 ```json
 {
   "output": {
-    "ImageUrls": ["https://cdn.example.com/generated.png"]
+    "type": "ImageUrls",
+    "data": ["https://cdn.example.com/generated.png"]
   },
   "model": "fal-ai/flux/dev",
   "provider": "falai",
@@ -114,12 +115,12 @@ Response format:
 }
 ```
 
-Extract URLs with `jq`:
+Extract URLs from `.output.data` with `jq`:
 
 ```bash
 infs --json app run wavespeed/wavespeed-ai/flux-schnell \
   --input '{"prompt":"a red balloon"}' \
-  | jq -r '.output.ImageUrls[]'
+  | jq -r '.output.data[]'
 ```
 
 ## Scripting Examples
@@ -137,7 +138,7 @@ PROMPTS=(
 for PROMPT in "${PROMPTS[@]}"; do
   SAFE_NAME=$(echo "$PROMPT" | tr ' ' '_' | cut -c1-30)
   infs app run wavespeed/wavespeed-ai/flux-schnell \
-    --input "{\"prompt\": \"$PROMPT\"}" \
+    --input "$(jq -n --arg p "$PROMPT" '{prompt: $p}')" \
     --output "${SAFE_NAME}.png"
 done
 ```
@@ -148,13 +149,15 @@ done
 #!/usr/bin/env bash
 # Generate a creative prompt with an LLM, then create the image
 
+# Use .output.data to extract text from the tagged-union JSON response
 PROMPT=$(infs --json app run openrouter/openai/gpt-4o \
   --input '{"prompt":"Write a vivid one-sentence image generation prompt for a surreal landscape"}' \
-  | jq -r '.output.Text')
+  | jq -r '.output.data')
 
 echo "Using prompt: $PROMPT"
 
+# Use jq to safely build the JSON input so special characters are escaped
 infs app run falai/fal-ai/flux/dev \
-  --input "{\"prompt\": \"$PROMPT\"}" \
+  --input "$(jq -n --arg p "$PROMPT" '{prompt: $p}')" \
   --output surreal_landscape.png
 ```

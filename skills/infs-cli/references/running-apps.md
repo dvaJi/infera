@@ -104,7 +104,8 @@ Example JSON response:
 ```json
 {
   "output": {
-    "Text": "Hello! How can I assist you today?"
+    "type": "Text",
+    "data": "Hello! How can I assist you today?"
   },
   "model": "openai/gpt-4o",
   "provider": "openrouter",
@@ -121,7 +122,8 @@ Image output response:
 ```json
 {
   "output": {
-    "ImageUrls": ["https://cdn.example.com/generated.png"]
+    "type": "ImageUrls",
+    "data": ["https://cdn.example.com/generated.png"]
   },
   "model": "fal-ai/flux/dev",
   "provider": "falai",
@@ -138,14 +140,15 @@ Chain LLM and image generation in a script:
 set -euo pipefail
 
 # Step 1: Generate a creative image prompt using an LLM
+# Use .output.data to extract the text from the tagged-union JSON response
 PROMPT=$(infs --json app run openrouter/openai/gpt-4o \
   --input '{"prompt":"Write a vivid one-sentence image generation prompt for a surreal landscape"}' \
-  | jq -r '.output.Text')
+  | jq -r '.output.data')
 
 echo "Generated prompt: $PROMPT"
 
-# Step 2: Generate the image
+# Step 2: Generate the image — use jq to safely build the JSON input
 infs app run falai/fal-ai/flux/dev \
-  --input "{\"prompt\": \"$PROMPT\"}" \
+  --input "$(jq -n --arg p "$PROMPT" '{prompt: $p}')" \
   --output surreal.png
 ```

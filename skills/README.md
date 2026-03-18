@@ -53,10 +53,11 @@ Skills are designed to be composable. Use `infs --json` output to pipe results b
 # Step 1: ask an LLM to describe an image
 DESCRIPTION=$(infs --json app run openrouter/openai/gpt-4o \
   --input '{"prompt":"Describe a surreal landscape for an image generation prompt"}' \
-  | jq -r '.output.Text')
+  | jq -r '.output.data')
 
-# Step 2: generate the image
-infs app run falai/fal-ai/flux/dev --input "{\"prompt\": \"$DESCRIPTION\"}"
+# Step 2: generate the image (use jq to safely build the JSON input)
+infs app run falai/fal-ai/flux/dev \
+  --input "$(jq -n --arg p "$DESCRIPTION" '{prompt: $p}')"
 ```
 
 ## Reference

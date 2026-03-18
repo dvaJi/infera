@@ -9,7 +9,7 @@ description: >
   Triggers: llm, openrouter, claude, gpt-4o, gemini, llama, mistral,
   language model, text generation, chat completion, ai assistant, summarise,
   code generation, explain code, stream llm.
-allowed-tools: Bash(infs *)
+allowed-tools: Bash(infs *) Bash(jq *)
 ---
 
 # infs-llm
@@ -92,7 +92,8 @@ Response format:
 ```json
 {
   "output": {
-    "Text": "Hello! How can I help you today?"
+    "type": "Text",
+    "data": "Hello! How can I help you today?"
   },
   "model": "openai/gpt-4o",
   "provider": "openrouter",
@@ -104,12 +105,12 @@ Response format:
 }
 ```
 
-Use `jq` to extract the text:
+Use `jq` to extract the text from `.output.data`:
 
 ```bash
 infs --json app run openrouter/openai/gpt-4o \
   --input '{"prompt":"What year is it?"}' \
-  | jq -r '.output.Text'
+  | jq -r '.output.data'
 ```
 
 ## Scripting with LLMs
@@ -117,8 +118,9 @@ infs --json app run openrouter/openai/gpt-4o \
 ```bash
 #!/usr/bin/env bash
 # Summarise a file using Claude
+# Use jq to safely build JSON input so the file content is correctly escaped
 FILE="$1"
-CONTENT=$(cat "$FILE")
 infs app run openrouter/anthropic/claude-sonnet-4-5 \
-  --input "{\"prompt\": \"Summarise the following text:\\n\\n$CONTENT\"}"
+  --input "$(jq -n --arg content "$(cat "$FILE")" \
+    '{prompt: ("Summarise the following text:\n\n" + $content)}')"
 ```

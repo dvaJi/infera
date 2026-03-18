@@ -10,7 +10,7 @@ description: >
   Triggers: infs, infera, ai model, run ai, openrouter, falai, fal.ai,
   replicate, wavespeed, image generation, video generation, llm, flux,
   claude api, gpt-4o, gemini, llama, provider connect.
-allowed-tools: Bash(infs *)
+allowed-tools: Bash(infs *) Bash(jq *)
 ---
 
 # infs-cli
