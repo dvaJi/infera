@@ -211,11 +211,18 @@ impl Provider for OpenRouterProvider {
             }
         })
         .await
-        .or_else(|_| {
-            tracing::warn!(
-                "openrouter: /api/v1/models failed after retries, falling back to static list"
-            );
-            Ok(self.static_apps())
+        .or_else(|e| {
+            // Only fall back to the static list for transient failures (network / 5xx).
+            // Auth errors (401/403) and other client errors are surfaced to the caller.
+            if e.is_transient() {
+                tracing::warn!(
+                    "openrouter: /api/v1/models failed after retries ({}), falling back to static list",
+                    e
+                );
+                Ok(self.static_apps())
+            } else {
+                Err(e)
+            }
         })
     }
 

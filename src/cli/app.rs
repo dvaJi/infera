@@ -101,12 +101,14 @@ async fn list_apps(
 
     let total = apps.len();
 
-    // Apply pagination
-    let page = page.max(1);
+    // Apply pagination.
+    // Clamp total_pages to a minimum of 1 so that page can always be clamped
+    // to 1..=total_pages even when the catalog is empty.
     let per_page = per_page.max(1);
+    let total_pages = total.div_ceil(per_page).max(1);
+    let page = page.max(1).min(total_pages);
     let start = (page - 1) * per_page;
     let page_apps: Vec<_> = apps.iter().skip(start).take(per_page).collect();
-    let total_pages = total.div_ceil(per_page);
 
     if json {
         let json_apps: Vec<serde_json::Value> = page_apps
@@ -178,12 +180,19 @@ async fn run_app(
 ) -> Result<()> {
     let app_id = AppId::parse(&app_str)?;
 
+    // Reject the invalid --json + --stream combination up front.
+    if json && stream {
+        anyhow::bail!("--json and --stream cannot be used together");
+    }
+
     // Resolve input: --input takes precedence, --input-file as alternative
     let input_str = if let Some(path) = input_file {
         std::fs::read_to_string(&path)
             .map_err(|e| anyhow::anyhow!("Failed to read input file '{}': {}", path.display(), e))?
+    } else if let Some(s) = input_arg {
+        s
     } else {
-        input_arg.expect("--input is required when --input-file is not provided")
+        anyhow::bail!("Provide input via --input or --input-file");
     };
 
     let input: serde_json::Value = serde_json::from_str(&input_str)
@@ -275,7 +284,15 @@ async fn save_images(urls: &[String], base_path: &std::path::Path) -> Result<()>
             base_path.with_file_name(format!("{}_{}{}", stem, i, ext))
         };
 
-        let bytes = client.get(url).send().await?.bytes().await?;
+        let resp = client.get(url).send().await?;
+        if !resp.status().is_success() {
+            anyhow::bail!(
+                "Failed to download image from '{}': HTTP {}",
+                url,
+                resp.status()
+            );
+        }
+        let bytes = resp.bytes().await?;
         std::fs::write(&path, &bytes)?;
         eprintln!("Saved image to: {}", path.display());
     }
