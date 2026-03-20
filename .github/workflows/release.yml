@@ -28,11 +28,21 @@ jobs:
         id: get-tag
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+            INPUT_TAG="${{ inputs.tag }}"
+            # Validate: must be a non-empty single-line string matching a semver tag (vX.Y.Z*)
+            if [[ ! "$INPUT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]] || [[ "$INPUT_TAG" =~ [[:space:]] ]]; then
+              echo "::error::Invalid tag input: '$INPUT_TAG'. Expected format: v<major>.<minor>.<patch>[...]"
+              exit 1
+            fi
+            printf 'tag=%s\n' "$INPUT_TAG" >> "$GITHUB_OUTPUT"
           else
             git fetch --tags origin
-            TAG=$(git tag --points-at ${{ github.event.workflow_run.head_sha }})
-            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            TAG=$(git describe --tags --exact-match "${{ github.event.workflow_run.head_sha }}" 2>/dev/null || true)
+            if [ -z "$TAG" ]; then
+              echo "::error::No tag found pointing at ${{ github.event.workflow_run.head_sha }}"
+              exit 1
+            fi
+            printf 'tag=%s\n' "$TAG" >> "$GITHUB_OUTPUT"
           fi
 
   build-release:
