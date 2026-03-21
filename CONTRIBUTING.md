@@ -140,10 +140,13 @@ Every time a commit is merged to `main`, [Release Please](https://github.com/goo
 
 ### 2. Binary builds (`release.yml`)
 
-When a GitHub Release is published (triggered by merging the Release Please PR), a second workflow:
+After the Release Please workflow completes successfully (triggered via `workflow_run`), a second workflow:
 
+- Resolves the release tag from the head commit that Release Please tagged.
 - Builds the `infs` binary for all five supported targets in parallel.
 - Uploads each binary as a named release asset.
+
+This workflow can also be triggered manually via `workflow_dispatch` — useful if a build fails or needs to be re-run for a specific tag.
 
 | Asset | Target |
 |---|---|
@@ -164,11 +167,13 @@ Release Please opens / updates Release PR
        ▼  (Release PR merged)
 GitHub Release created with changelog
        │
-       ▼
+       ▼  (Release Please workflow completes)
 Binary build workflow runs → release assets uploaded
 ```
 
 **You do not need to manually tag, create releases, or bump version numbers.** Just merge commits with the correct Conventional Commit types and Release Please handles the rest.
+
+> **Manual fallback:** If the binary build workflow needs to be re-run for an existing release, use the "Run workflow" button on the Actions tab and supply the tag name (e.g. `v1.2.3`).
 
 ## Adding a New Provider
 

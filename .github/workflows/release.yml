@@ -1,14 +1,53 @@
 name: Release
 
 on:
-  release:
-    types: [published]
+  workflow_run:
+    workflows: ["Release Please"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g., v1.0.0)'
+        required: true
 
 permissions:
   contents: write
 
 jobs:
+  get-tag:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.get-tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get release tag
+        id: get-tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            INPUT_TAG="${{ inputs.tag }}"
+            # Validate: must be a non-empty single-line string matching a semver tag (vX.Y.Z*)
+            if [[ ! "$INPUT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]] || [[ "$INPUT_TAG" =~ [[:space:]] ]]; then
+              echo "::error::Invalid tag input: '$INPUT_TAG'. Expected format: v<major>.<minor>.<patch>[...]"
+              exit 1
+            fi
+            printf 'tag=%s\n' "$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            git fetch --tags origin
+            TAG=$(git describe --tags --exact-match "${{ github.event.workflow_run.head_sha }}" 2>/dev/null || true)
+            if [ -z "$TAG" ]; then
+              echo "::error::No tag found pointing at ${{ github.event.workflow_run.head_sha }}"
+              exit 1
+            fi
+            printf 'tag=%s\n' "$TAG" >> "$GITHUB_OUTPUT"
+          fi
+
   build-release:
+    needs: get-tag
+    if: ${{ needs.get-tag.outputs.tag != '' }}
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -48,6 +87,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.get-tag.outputs.tag }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -69,6 +110,6 @@ jobs:
         run: cargo build --release --locked --target ${{ matrix.target }}
 
       - name: Upload release asset
-        run: gh release upload "${{ github.event.release.tag_name }}" "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}#${{ matrix.asset_name }}" --clobber
+        run: gh release upload "${{ needs.get-tag.outputs.tag }}" "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}#${{ matrix.asset_name }}" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
