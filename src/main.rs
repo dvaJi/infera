@@ -39,5 +39,6 @@ async fn run(cli: Cli) -> Result<()> {
         Commands::Config(cmd) => cli::config::handle(cmd).await,
         Commands::Doctor => cli::doctor::handle().await,
         Commands::Completions { shell } => cli::completions::handle(shell),
+        Commands::SelfCmd(cmd) => cli::update::handle_update_command(cmd, json).await,
     }
 }
