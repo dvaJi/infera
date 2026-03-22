@@ -1,12 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'infs-v*.*.*'
-  workflow_run:
-    workflows: ["Release Please"]
-    types: [completed]
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       tag:
@@ -18,7 +14,6 @@ permissions:
 
 jobs:
   get-tag:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.get-tag.outputs.tag }}
@@ -32,23 +27,13 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             INPUT_TAG="${{ inputs.tag }}"
-            # Validate: must be a non-empty single-line string matching a semver tag (vX.Y.Z* or infs-vX.Y.Z*)
             if [[ ! "$INPUT_TAG" =~ ^(infs-)?v[0-9]+\.[0-9]+\.[0-9]+ ]] || [[ "$INPUT_TAG" =~ [[:space:]] ]]; then
               echo "::error::Invalid tag input: '$INPUT_TAG'. Expected format: v<major>.<minor>.<patch>[...] or infs-v<major>.<minor>.<patch>[...]"
               exit 1
             fi
             printf 'tag=%s\n' "$INPUT_TAG" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event_name }}" = "push" ]; then
-            TAG="${GITHUB_REF#refs/tags/}"
-            printf 'tag=%s\n' "$TAG" >> "$GITHUB_OUTPUT"
           else
-            git fetch --tags origin
-            TAG=$(git describe --tags --exact-match "${{ github.event.workflow_run.head_sha }}" 2>/dev/null || true)
-            if [ -z "$TAG" ]; then
-              echo "::error::No tag found pointing at ${{ github.event.workflow_run.head_sha }}"
-              exit 1
-            fi
-            printf 'tag=%s\n' "$TAG" >> "$GITHUB_OUTPUT"
+            printf 'tag=%s\n' "${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
           fi
 
   build-release:
@@ -72,7 +57,7 @@ jobs:
             asset_name: infs-linux-aarch64
             use_cross: true
 
-          - os: macos-13
+          - os: macos-14-large
             target: x86_64-apple-darwin
             artifact_name: infs
             asset_name: infs-macos-x86_64
