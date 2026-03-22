@@ -111,7 +111,7 @@ install_infs() {
     mkdir -p "$INSTALL_DIR"
 
     TEMP_FILE=$(mktemp)
-    trap "rm -f $TEMP_FILE" EXIT
+    trap 'rm -f "$TEMP_FILE"' EXIT
 
     info "Downloading from $DOWNLOAD_URL..."
     if ! curl -fsSL "$DOWNLOAD_URL" -o "$TEMP_FILE"; then
