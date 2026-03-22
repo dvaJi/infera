@@ -10,16 +10,16 @@ $Repo = "dvaji/infera"
 $BinaryName = "infs.exe"
 
 if ($Help) {
-    Write-Host "Usage: irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1 | iex"
-    Write-Host "   or: irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1 | iex -Version v1.0.0"
+    Write-Host "Usage: iex \"& { `$(irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1) }\""
+    Write-Host "   or: iex \"& { `$(irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1) } -Version v1.0.0\""
     Write-Host ""
     Write-Host "Parameters:"
     Write-Host "  -Version    - Version to install (default: latest)"
     Write-Host "  -InstallDir - Directory to install infs (default: `$env:USERPROFILE\.local\bin)"
     Write-Host ""
     Write-Host "Examples:"
-    Write-Host "  irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1 | iex"
-    Write-Host "  irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1 | iex -InstallDir 'C:\Tools'"
+    Write-Host "  iex \"& { `$(irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1) }\""
+    Write-Host "  iex \"& { `$(irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1) } -InstallDir 'C:\Tools'\""
     exit 0
 }
 
@@ -56,7 +56,7 @@ function Get-Platform {
     $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
     $archString = switch ($arch) {
         "X64" { "x86_64" }
-        "Arm64" { "aarch64" }
+        "Arm64" { Write-Err "Windows ARM64 is not supported. Only x86_64 builds are available." }
         default { Write-Err "Unsupported architecture: $arch" }
     }
     return "windows-$archString"
@@ -105,9 +105,10 @@ try {
 Write-Info "Installed infs to $installPath"
 
 $userPath = [Environment]::GetEnvironmentVariable("PATH", "User")
-if ($userPath -notlike "*$InstallDir*") {
+if ($null -eq $userPath -or $userPath -notlike "*$InstallDir*") {
     Write-Info "Adding $InstallDir to your PATH..."
-    $newPath = if ($userPath.EndsWith(";")) { $userPath + $InstallDir } else { $userPath + ";" + $InstallDir }
+    $currentPath = if ($null -eq $userPath -or $userPath -eq "") { "" } else { $userPath }
+    $newPath = if ($currentPath -eq "" -or $currentPath.EndsWith(";")) { $currentPath + $InstallDir } else { $currentPath + ";" + $InstallDir }
     [Environment]::SetEnvironmentVariable("PATH", $newPath, "User")
     $env:PATH = if ($env:PATH.EndsWith(";")) { $env:PATH + $InstallDir } else { $env:PATH + ";" + $InstallDir }
     Write-Info "Added to PATH. You may need to restart your terminal for the change to take effect."

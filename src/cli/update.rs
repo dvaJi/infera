@@ -93,12 +93,15 @@ async fn self_update(skip_confirm: bool, json: bool) -> Result<()> {
         return Ok(());
     }
 
-    let asset_name = get_asset_name_for_platform();
+    let asset_name = get_asset_name_for_platform()?;
     let asset = release
         .assets
         .iter()
         .find(|a| a.name == asset_name)
-        .context(format!("No release asset found for your platform: {}", asset_name))?;
+        .context(format!(
+            "No release asset found for your platform: {}",
+            asset_name
+        ))?;
 
     if json {
         let output = serde_json::json!({
@@ -162,18 +165,24 @@ fn parse_version(tag: &str) -> Result<Version> {
     Version::parse(version_str).context(format!("Failed to parse version from tag: {}", tag))
 }
 
-fn get_asset_name_for_platform() -> String {
+fn get_asset_name_for_platform() -> Result<String> {
     let os = env::consts::OS;
     let arch = env::consts::ARCH;
 
     match (os, arch) {
-        ("linux", "x86_64") => "infs-linux-x86_64".to_string(),
-        ("linux", "aarch64") => "infs-linux-aarch64".to_string(),
-        ("macos", "x86_64") => "infs-macos-x86_64".to_string(),
-        ("macos", "aarch64") => "infs-macos-aarch64".to_string(),
-        ("windows", "x86_64") => "infs-windows-x86_64.exe".to_string(),
-        ("windows", "aarch64") => "infs-windows-aarch64.exe".to_string(),
-        _ => format!("infs-{}-{}{}", os, arch, if os == "windows" { ".exe" } else { "" }),
+        ("linux", "x86_64") => Ok("infs-linux-x86_64".to_string()),
+        ("linux", "aarch64") => Ok("infs-linux-aarch64".to_string()),
+        ("macos", "aarch64") => Ok("infs-macos-aarch64".to_string()),
+        ("windows", "x86_64") => Ok("infs-windows-x86_64.exe".to_string()),
+        ("macos", "x86_64") => {
+            anyhow::bail!(
+                "Intel macOS is not supported. Only Apple Silicon (aarch64) builds are available."
+            )
+        }
+        ("windows", "aarch64") => {
+            anyhow::bail!("Windows ARM64 is not supported. Only x86_64 builds are available.")
+        }
+        _ => anyhow::bail!("Unsupported platform: {}-{}", os, arch),
     }
 }
 
@@ -198,7 +207,11 @@ async fn download_binary(url: &str) -> Result<PathBuf> {
         .context("Failed to read download response")?;
 
     let temp_dir = tempfile::tempdir().context("Failed to create temp directory")?;
-    let extension = if env::consts::OS == "windows" { "exe" } else { "bin" };
+    let extension = if env::consts::OS == "windows" {
+        "exe"
+    } else {
+        "bin"
+    };
     let temp_file = temp_dir.path().join(format!("infs.{}", extension));
 
     fs::write(&temp_file, &bytes).context("Failed to write downloaded binary")?;
@@ -222,16 +235,13 @@ fn replace_current_binary(new_binary: &PathBuf) -> Result<()> {
         if backup_path.exists() {
             fs::remove_file(&backup_path).ok();
         }
-        fs::rename(&current_exe, &backup_path)
-            .context("Failed to backup current binary")?;
-        fs::copy(new_binary, &current_exe)
-            .context("Failed to install new binary")?;
+        fs::rename(&current_exe, &backup_path).context("Failed to backup current binary")?;
+        fs::copy(new_binary, &current_exe).context("Failed to install new binary")?;
     }
 
     #[cfg(unix)]
     {
-        fs::copy(new_binary, &current_exe)
-            .context("Failed to replace binary")?;
+        fs::copy(new_binary, &current_exe).context("Failed to replace binary")?;
     }
 
     Ok(())

@@ -49,7 +49,7 @@ curl -fsSL https://raw.githubusercontent.com/dvaji/infera/main/install.sh | bash
 **Windows (PowerShell):**
 
 ```powershell
-irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1 | iex
+iex "& { $(irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1) }"
 ```
 
 The installer will download the latest release and place it in `~/.local/bin` (Unix) or `%USERPROFILE%\.local\bin` (Windows). You may need to add this directory to your PATH.

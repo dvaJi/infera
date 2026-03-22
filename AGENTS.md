@@ -160,11 +160,15 @@ Binary targets built on each release:
 | `infs-macos-aarch64`      | `aarch64-apple-darwin`       |
 | `infs-windows-x86_64.exe` | `x86_64-pc-windows-msvc`     |
 
+## Things to always do
+
+- Always run `cargo test` before submitting a PR.
+- Always use `cargo fmt` and `cargo clippy` to maintain code quality and consistency.
+- If you are unsure how to do something, use `gh_grep` to search code examples from GitHub.
+
 ## Things to Avoid
 
 - Do **not** hardcode API endpoints inside test code; use mocks or feature flags.
 - Do **not** store secrets in `config.toml`; they belong in `credentials.toml`.
 - Do **not** bump versions in `Cargo.toml` manually — Release Please does this automatically.
 - Do **not** use `{provider.website}/keys` to construct help URLs; use `descriptor.api_key_help_url`.
-
-If you are unsure how to do something, use `gh_grep` to search code examples from GitHub.

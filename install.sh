@@ -42,12 +42,10 @@ get_platform() {
             fi
             ;;
         Darwin)
-            if [ "$ARCH" = "x86_64" ]; then
-                echo "macos-x86_64"
-            elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
                 echo "macos-aarch64"
             else
-                error "Unsupported architecture: $ARCH"
+                error "Unsupported macOS architecture: $ARCH. Only Apple Silicon (aarch64/arm64) is supported."
             fi
             ;;
         *)
