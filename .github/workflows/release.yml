@@ -100,7 +100,11 @@ jobs:
         if: ${{ !matrix.use_cross }}
         run: cargo build --release --locked --target ${{ matrix.target }}
 
+      - name: Prepare asset
+        run: |
+          cp "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}" "${{ matrix.asset_name }}"
+
       - name: Upload release asset
-        run: gh release upload "${{ needs.get-tag.outputs.tag }}" "target/${{ matrix.target }}/release/${{ matrix.artifact_name }}#${{ matrix.asset_name }}" --clobber
+        run: gh release upload "${{ needs.get-tag.outputs.tag }}" "${{ matrix.asset_name }}" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
