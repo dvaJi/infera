@@ -24,7 +24,16 @@ error() {
 }
 
 get_latest_version() {
-    curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
+    local response
+    response=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null) || {
+        error "Failed to fetch latest version from GitHub API. Please check your internet connection."
+    }
+    local version
+    version=$(echo "$response" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+    if [ -z "$version" ]; then
+        error "Could not parse version from GitHub API response. Response was: ${response:0:200}..."
+    fi
+    echo "$version"
 }
 
 get_platform() {
@@ -124,7 +133,7 @@ install_infs() {
 
     info "Installed infs to $INSTALL_DIR/$BINARY_NAME"
 
-    if ! echo "$PATH" | grep -q "$INSTALL_DIR"; then
+    if ! echo ":$PATH:" | grep -q ":$INSTALL_DIR:"; then
         detect_shell_profile
         if [ -n "$SHELL_PROFILE" ]; then
             info "Adding $INSTALL_DIR to PATH in $SHELL_PROFILE..."

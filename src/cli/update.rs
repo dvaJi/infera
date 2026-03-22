@@ -103,37 +103,52 @@ async fn self_update(skip_confirm: bool, json: bool) -> Result<()> {
             asset_name
         ))?;
 
+    if !json {
+        println!("Update available: {} -> {}", VERSION, latest_version);
+        println!("Download URL: {}", asset.browser_download_url);
+
+        if !skip_confirm
+            && !Confirm::new()
+                .with_prompt("Do you want to update?")
+                .default(true)
+                .interact()?
+        {
+            println!("Update cancelled.");
+            return Ok(());
+        }
+    }
+
     if json {
         let output = serde_json::json!({
-            "status": "update_available",
+            "status": "updating",
             "current_version": VERSION,
             "latest_version": latest_version.to_string(),
             "download_url": asset.browser_download_url
         });
         println!("{}", serde_json::to_string_pretty(&output)?);
-        return Ok(());
+    } else {
+        println!("Downloading latest version...");
     }
 
-    println!("Update available: {} -> {}", VERSION, latest_version);
-    println!("Download URL: {}", asset.browser_download_url);
-
-    if !skip_confirm
-        && !Confirm::new()
-            .with_prompt("Do you want to update?")
-            .default(true)
-            .interact()?
-    {
-        println!("Update cancelled.");
-        return Ok(());
-    }
-
-    println!("Downloading latest version...");
     let new_binary = download_binary(&asset.browser_download_url).await?;
 
-    println!("Installing update...");
+    if !json {
+        println!("Installing update...");
+    }
+
     replace_current_binary(&new_binary)?;
 
-    println!("Successfully updated to {}!", latest_version);
+    if json {
+        let output = serde_json::json!({
+            "status": "updated",
+            "previous_version": VERSION,
+            "new_version": latest_version.to_string()
+        });
+        println!("{}", serde_json::to_string_pretty(&output)?);
+    } else {
+        println!("Successfully updated to {}!", latest_version);
+    }
+
     Ok(())
 }
 

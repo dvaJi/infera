@@ -345,9 +345,11 @@ mod tests {
     #[test]
     fn test_config_roundtrip_toml() {
         let mut config = AppConfig::default();
-        let mut prov = ProviderConfig::default();
-        prov.connected = true;
-        prov.auth_method = Some("api_key".to_string());
+        let prov = ProviderConfig {
+            connected: true,
+            auth_method: Some("api_key".to_string()),
+            ..Default::default()
+        };
         config.providers.insert("openrouter".to_string(), prov);
 
         let serialized = toml::to_string_pretty(&config).unwrap();
@@ -367,8 +369,10 @@ mod tests {
 
     #[test]
     fn test_keychain_credentials_serialized_when_present() {
-        let mut prov = ProviderConfig::default();
-        prov.keychain_credentials = vec!["api_key".to_string()];
+        let prov = ProviderConfig {
+            keychain_credentials: vec!["api_key".to_string()],
+            ..Default::default()
+        };
         let serialized = toml::to_string_pretty(&prov).unwrap();
         assert!(serialized.contains("keychain_credentials"));
 
