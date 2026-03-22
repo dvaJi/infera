@@ -27,6 +27,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 toml = "0.8"
 async-trait = "0.1"
 keyring = "3"
+semver = "1"
+tempfile = "3"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }

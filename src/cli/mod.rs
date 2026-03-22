@@ -3,12 +3,14 @@ pub mod completions;
 pub mod config;
 pub mod doctor;
 pub mod provider;
+pub mod update;
 
 use app::AppCommands;
 use clap::{Parser, Subcommand};
 use clap_complete::Shell;
 use config::ConfigCommands;
 use provider::ProviderCommands;
+use update::UpdateCommands;
 
 #[derive(Parser)]
 #[command(
@@ -41,4 +43,7 @@ pub enum Commands {
         /// Shell to generate completions for (bash, zsh, fish, powershell, elvish)
         shell: Shell,
     },
+    /// Self-update commands
+    #[command(name = "self")]
+    SelfCmd(UpdateCommands),
 }

@@ -72,6 +72,7 @@ All tests must pass before submitting any change.
         ├── provider.rs           # provider list / connect / show / disconnect
         ├── app.rs                # app list / run / show
         ├── config.rs             # config path
+        ├── update.rs             # self check / self update
         └── doctor.rs             # doctor
 ```
 
@@ -143,21 +144,21 @@ Release Please reads these commit messages to auto-generate `CHANGELOG.md` and v
 
 ## CI / Release Workflow
 
-| Workflow | Trigger | What it does |
-|---|---|---|
-| `ci.yml` | pull request / push to `main` | Builds, tests, lints (`cargo build`, `cargo test`, `cargo clippy`, `cargo fmt`) on Linux, macOS, Windows |
-| `release-please.yml` | push to `main` | Opens/updates a Release PR; on merge creates a GitHub Release |
-| `release.yml` | GitHub Release published | Builds `infs` for 5 targets; uploads binaries as release assets |
+| Workflow             | Trigger                       | What it does                                                                                             |
+| -------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `ci.yml`             | pull request / push to `main` | Builds, tests, lints (`cargo build`, `cargo test`, `cargo clippy`, `cargo fmt`) on Linux, macOS, Windows |
+| `release-please.yml` | push to `main`                | Opens/updates a Release PR; on merge creates a GitHub Release                                            |
+| `release.yml`        | GitHub Release published      | Builds `infs` for 5 targets; uploads binaries as release assets                                          |
 
 Binary targets built on each release:
 
-| Asset name | Target triple |
-|---|---|
-| `infs-linux-x86_64` | `x86_64-unknown-linux-musl` |
-| `infs-linux-aarch64` | `aarch64-unknown-linux-musl` |
-| `infs-macos-x86_64` | `x86_64-apple-darwin` |
-| `infs-macos-aarch64` | `aarch64-apple-darwin` |
-| `infs-windows-x86_64.exe` | `x86_64-pc-windows-msvc` |
+| Asset name                | Target triple                |
+| ------------------------- | ---------------------------- |
+| `infs-linux-x86_64`       | `x86_64-unknown-linux-musl`  |
+| `infs-linux-aarch64`      | `aarch64-unknown-linux-musl` |
+| `infs-macos-x86_64`       | `x86_64-apple-darwin`        |
+| `infs-macos-aarch64`      | `aarch64-apple-darwin`       |
+| `infs-windows-x86_64.exe` | `x86_64-pc-windows-msvc`     |
 
 ## Things to Avoid
 
@@ -165,3 +166,5 @@ Binary targets built on each release:
 - Do **not** store secrets in `config.toml`; they belong in `credentials.toml`.
 - Do **not** bump versions in `Cargo.toml` manually — Release Please does this automatically.
 - Do **not** use `{provider.website}/keys` to construct help URLs; use `descriptor.api_key_help_url`.
+
+If you are unsure how to do something, use `gh_grep` to search code examples from GitHub.

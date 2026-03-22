@@ -38,7 +38,23 @@ Every AI provider has its own API shape, auth flow, and SDK. `infs` wraps them b
 
 ## Installation
 
-### Download a pre-built binary (recommended)
+### Quick install (recommended)
+
+**macOS / Linux:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/dvaji/infera/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/dvaji/infera/main/install.ps1 | iex
+```
+
+The installer will download the latest release and place it in `~/.local/bin` (Unix) or `%USERPROFILE%\.local\bin` (Windows). You may need to add this directory to your PATH.
+
+### Download a pre-built binary
 
 Pre-built binaries are attached to every [GitHub Release](https://github.com/dvaJi/infera/releases/latest).
 Download the binary for your platform and place it somewhere on your `PATH`:
@@ -47,7 +63,6 @@ Download the binary for your platform and place it somewhere on your `PATH`:
 |---|---|
 | Linux x86_64 | `infs-linux-x86_64` |
 | Linux aarch64 (ARM) | `infs-linux-aarch64` |
-| macOS x86_64 (Intel) | `infs-macos-x86_64` |
 | macOS aarch64 (Apple Silicon) | `infs-macos-aarch64` |
 | Windows x86_64 | `infs-windows-x86_64.exe` |
 
@@ -55,7 +70,7 @@ Download the binary for your platform and place it somewhere on your `PATH`:
 
 ```bash
 # Replace <version> and <platform> with the appropriate values
-curl -fsSL https://github.com/dvaJi/infera/releases/download/<version>/infs-<platform> \
+curl -fsSL https://github.com/dvaji/infera/releases/download/<version>/infs-<platform> \
   -o infs
 chmod +x infs
 sudo mv infs /usr/local/bin/
@@ -63,10 +78,25 @@ sudo mv infs /usr/local/bin/
 # mkdir -p ~/.local/bin && mv infs ~/.local/bin/
 ```
 
+### Self-update
+
+Once installed, `infs` can update itself:
+
+```bash
+# Check for updates
+infs self check
+
+# Update to the latest version
+infs self update
+
+# Skip confirmation prompt
+infs self update --yes
+```
+
 ### Build from source
 
 ```bash
-git clone https://github.com/dvaJi/infera
+git clone https://github.com/dvaji/infera
 cd infera
 cargo build --release
 # Binary is at ./target/release/infs
@@ -362,6 +392,7 @@ See [ROADMAP.md](ROADMAP.md) for the full roadmap. Summary:
 - [x] `--json` output flag for machine-friendly output
 - [x] Shell completion scripts (`infs completions bash/zsh/fish/powershell/elvish`)
 - [x] Retry logic with exponential backoff
+- [x] Self-update functionality (`infs self update`)
 
 **Planned:**
 - [ ] Streaming LLM responses
