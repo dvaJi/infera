@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0](https://github.com/dvaJi/infera/compare/infs-v0.2.0...infs-v0.3.0) (2026-03-22)
+
+
+### Features
+
+* add self-update functionality and install scripts ([e86da6a](https://github.com/dvaJi/infera/commit/e86da6a4f97a01ab4ffad37f3be1ff712441bfc0))
+* add self-update functionality and install scripts ([59ac56d](https://github.com/dvaJi/infera/commit/59ac56d02e78459d24b7826e3f5a5169e888cbeb))
+
+
+### Bug Fixes
+
+* address CI and review feedback ([1009190](https://github.com/dvaJi/infera/commit/10091904394f73d6a5c40609dcfe71ee4d224605))
+* address CI and review feedback ([62d93bf](https://github.com/dvaJi/infera/commit/62d93bfd273d0cc9e82d4fca1e043f6acedfb6b6))
+* address review feedback ([1b88195](https://github.com/dvaJi/infera/commit/1b88195865913a9c9605acf7e3b56a19fdf340a2))
+* **ci:** drop Intel macOS build (requires paid runner) ([f0bae15](https://github.com/dvaJi/infera/commit/f0bae15eab51e9e4fe981c131a31ff177141cb80))
+* **ci:** update macOS runners and fix release asset upload ([ce7e5b4](https://github.com/dvaJi/infera/commit/ce7e5b4b1844fba52d6c7cf760be94dfaff1406e))
+* streamline release workflow by removing push and workflow_run triggers ([8ef553f](https://github.com/dvaJi/infera/commit/8ef553faf916d76ecf0c099cc8ab30c067572541))
+* update actions/checkout and actions/cache versions in CI and release workflows ([821e17e](https://github.com/dvaJi/infera/commit/821e17ec3e53a1541c2481f3c351cadf7b0552cb))
+* update release workflow to trigger on infs-v*.*.* tags ([645b6fb](https://github.com/dvaJi/infera/commit/645b6fba13119bd8eaeb63ab9233650cd08faa9a))
+
 ## [0.2.0](https://github.com/dvaJi/infera/compare/infs-v0.1.0...infs-v0.2.0) (2026-03-18)
 
 
