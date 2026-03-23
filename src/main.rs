@@ -23,6 +23,12 @@ async fn main() -> Result<()> {
 
     let cli = Cli::parse();
 
+    if !cli.no_env {
+        if let Some(env_path) = config::load_dotenv() {
+            tracing::info!("Loaded .env from: {:?}", env_path);
+        }
+    }
+
     if let Err(e) = run(cli).await {
         eprintln!("Error: {}", e);
         std::process::exit(1);

@@ -29,6 +29,7 @@ async-trait = "0.1"
 keyring = "3"
 semver = "1"
 tempfile = "3"
+dotenvy = "0.15"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
