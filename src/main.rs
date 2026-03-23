@@ -22,14 +22,15 @@ async fn main() -> Result<()> {
         .init();
 
     let cli = Cli::parse();
+    let load_env = !cli.no_env;
 
-    if !cli.no_env {
+    if load_env {
         if let Some(env_path) = config::load_dotenv() {
             tracing::info!("Loaded .env from: {:?}", env_path);
         }
     }
 
-    if let Err(e) = run(cli).await {
+    if let Err(e) = run(cli, load_env).await {
         eprintln!("Error: {}", e);
         std::process::exit(1);
     }
@@ -37,13 +38,13 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn run(cli: Cli) -> Result<()> {
+async fn run(cli: Cli, load_env: bool) -> Result<()> {
     let json = cli.json;
     match cli.command {
-        Commands::Provider(cmd) => cli::provider::handle(cmd, json).await,
-        Commands::App(cmd) => cli::app::handle(cmd, json).await,
+        Commands::Provider(cmd) => cli::provider::handle(cmd, json, load_env).await,
+        Commands::App(cmd) => cli::app::handle(cmd, json, load_env).await,
         Commands::Config(cmd) => cli::config::handle(cmd).await,
-        Commands::Doctor => cli::doctor::handle().await,
+        Commands::Doctor => cli::doctor::handle(load_env).await,
         Commands::Completions { shell } => cli::completions::handle(shell),
         Commands::SelfCmd(cmd) => cli::update::handle_update_command(cmd, json).await,
     }

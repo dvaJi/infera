@@ -108,6 +108,27 @@ pub fn credentials_from_env() -> HashMap<String, HashMap<String, String>> {
     result
 }
 
+fn merge_env_credentials(
+    config: &mut AppConfig,
+    env_creds: HashMap<String, HashMap<String, String>>,
+) {
+    for (provider_id, creds) in env_creds {
+        let provider_config = config.providers.entry(provider_id).or_default();
+        for (key, value) in creds {
+            provider_config.credentials.entry(key).or_insert(value);
+        }
+    }
+}
+
+fn merge_file_credentials(config: &mut AppConfig, file_creds: HashMap<String, ProviderConfig>) {
+    for (provider_id, cred_config) in file_creds {
+        let provider_config = config.providers.entry(provider_id).or_default();
+        for (key, value) in cred_config.credentials {
+            provider_config.credentials.insert(key, value);
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Keyring helpers
 // ---------------------------------------------------------------------------
@@ -214,13 +235,7 @@ pub fn load_config_with_env(load_env: bool) -> Result<AppConfig, InfsError> {
 
     // Load credentials from environment variables first (lowest priority).
     if load_env {
-        let env_creds = credentials_from_env();
-        for (provider_id, creds) in env_creds {
-            let provider_config = config.providers.entry(provider_id).or_default();
-            for (key, value) in creds {
-                provider_config.credentials.entry(key).or_insert(value);
-            }
-        }
+        merge_env_credentials(&mut config, credentials_from_env());
     }
 
     // Load credentials: keychain next (for keys recorded in keychain_credentials),
@@ -242,14 +257,7 @@ pub fn load_config_with_env(load_env: bool) -> Result<AppConfig, InfsError> {
 
         let creds: HashMap<String, ProviderConfig> = toml::from_str(&creds_content)
             .map_err(|e| InfsError::ConfigError(format!("Failed to parse credentials: {}", e)))?;
-
-        for (provider_id, cred_config) in creds {
-            let provider_config = config.providers.entry(provider_id).or_default();
-            for (key, value) in cred_config.credentials {
-                // Don't overwrite a value already loaded from keychain.
-                provider_config.credentials.entry(key).or_insert(value);
-            }
-        }
+        merge_file_credentials(&mut config, creds);
     }
 
     Ok(config)
@@ -401,6 +409,46 @@ pub fn remove_provider_credentials(provider_id: &str) -> Result<(), InfsError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
+    use std::sync::{Mutex, MutexGuard, OnceLock};
+
+    fn test_env_lock() -> MutexGuard<'static, ()> {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+    }
+
+    struct TestEnvGuard {
+        original_cwd: PathBuf,
+        original_vars: HashMap<String, Option<String>>,
+    }
+
+    impl TestEnvGuard {
+        fn new(vars: &[&str]) -> Self {
+            let original_cwd = std::env::current_dir().unwrap();
+            let original_vars = vars
+                .iter()
+                .map(|key| ((*key).to_string(), std::env::var(key).ok()))
+                .collect();
+
+            Self {
+                original_cwd,
+                original_vars,
+            }
+        }
+    }
+
+    impl Drop for TestEnvGuard {
+        fn drop(&mut self) {
+            let _ = std::env::set_current_dir(&self.original_cwd);
+
+            for (key, value) in &self.original_vars {
+                match value {
+                    Some(value) => std::env::set_var(key, value),
+                    None => std::env::remove_var(key),
+                }
+            }
+        }
+    }
 
     #[test]
     fn test_app_config_default() {
@@ -532,6 +580,14 @@ mod tests {
 
     #[test]
     fn test_credentials_from_env_empty() {
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&[
+            "OPENROUTER_API_KEY",
+            "FALAI_API_KEY",
+            "REPLICATE_API_TOKEN",
+            "WAVESPEED_API_KEY",
+        ]);
+
         std::env::remove_var("OPENROUTER_API_KEY");
         std::env::remove_var("FALAI_API_KEY");
         std::env::remove_var("REPLICATE_API_TOKEN");
@@ -543,6 +599,14 @@ mod tests {
 
     #[test]
     fn test_credentials_from_env_with_values() {
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&[
+            "OPENROUTER_API_KEY",
+            "FALAI_API_KEY",
+            "REPLICATE_API_TOKEN",
+            "WAVESPEED_API_KEY",
+        ]);
+
         std::env::set_var("OPENROUTER_API_KEY", "test-openrouter-key");
         std::env::set_var("FALAI_API_KEY", "test-falai-key");
 
@@ -555,30 +619,72 @@ mod tests {
             creds.get("falai").and_then(|c| c.get("api_key")),
             Some(&"test-falai-key".to_string())
         );
-
-        std::env::remove_var("OPENROUTER_API_KEY");
-        std::env::remove_var("FALAI_API_KEY");
     }
 
     #[test]
     fn test_credentials_from_env_ignores_empty() {
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&[
+            "OPENROUTER_API_KEY",
+            "FALAI_API_KEY",
+            "REPLICATE_API_TOKEN",
+            "WAVESPEED_API_KEY",
+        ]);
+
         std::env::set_var("OPENROUTER_API_KEY", "");
 
         let creds = credentials_from_env();
         assert!(!creds.contains_key("openrouter"));
+    }
 
-        std::env::remove_var("OPENROUTER_API_KEY");
+    #[test]
+    fn test_credentials_file_overrides_env() {
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&[
+            "OPENROUTER_API_KEY",
+            "FALAI_API_KEY",
+            "REPLICATE_API_TOKEN",
+            "WAVESPEED_API_KEY",
+        ]);
+
+        let mut config = AppConfig::default();
+        merge_env_credentials(
+            &mut config,
+            HashMap::from([(
+                "openrouter".to_string(),
+                HashMap::from([("api_key".to_string(), "from-env".to_string())]),
+            )]),
+        );
+
+        merge_file_credentials(
+            &mut config,
+            HashMap::from([(
+                "openrouter".to_string(),
+                ProviderConfig {
+                    credentials: HashMap::from([("api_key".to_string(), "from-file".to_string())]),
+                    ..Default::default()
+                },
+            )]),
+        );
+
+        assert_eq!(
+            config
+                .providers
+                .get("openrouter")
+                .and_then(|provider| provider.credentials.get("api_key")),
+            Some(&"from-file".to_string())
+        );
     }
 
     #[test]
     fn test_load_dotenv_finds_file_in_current_dir() {
         use std::io::Write;
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&["TEST_VAR"]);
         let temp_dir = tempfile::tempdir().unwrap();
         let env_path = temp_dir.path().join(".env");
         let mut file = std::fs::File::create(&env_path).unwrap();
         writeln!(file, "TEST_VAR=test_value").unwrap();
-
-        let original_cwd = std::env::current_dir().unwrap();
         std::env::set_current_dir(temp_dir.path()).unwrap();
 
         std::env::remove_var("TEST_VAR");
@@ -589,14 +695,13 @@ mod tests {
             std::env::var("TEST_VAR").ok(),
             Some("test_value".to_string())
         );
-
-        std::env::set_current_dir(original_cwd).unwrap();
-        std::env::remove_var("TEST_VAR");
     }
 
     #[test]
     fn test_load_dotenv_searches_parent_dirs() {
         use std::io::Write;
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&["PARENT_TEST_VAR"]);
         let temp_dir = tempfile::tempdir().unwrap();
         let env_path = temp_dir.path().join(".env");
         let mut file = std::fs::File::create(&env_path).unwrap();
@@ -604,8 +709,6 @@ mod tests {
 
         let child_dir = temp_dir.path().join("child");
         std::fs::create_dir(&child_dir).unwrap();
-
-        let original_cwd = std::env::current_dir().unwrap();
         std::env::set_current_dir(&child_dir).unwrap();
 
         std::env::remove_var("PARENT_TEST_VAR");
@@ -616,21 +719,16 @@ mod tests {
             std::env::var("PARENT_TEST_VAR").ok(),
             Some("parent_value".to_string())
         );
-
-        std::env::set_current_dir(original_cwd).unwrap();
-        std::env::remove_var("PARENT_TEST_VAR");
     }
 
     #[test]
     fn test_load_dotenv_returns_none_when_no_file() {
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&[]);
         let temp_dir = tempfile::tempdir().unwrap();
-
-        let original_cwd = std::env::current_dir().unwrap();
         std::env::set_current_dir(temp_dir.path()).unwrap();
 
         let loaded_path = load_dotenv();
         assert!(loaded_path.is_none());
-
-        std::env::set_current_dir(original_cwd).unwrap();
     }
 }

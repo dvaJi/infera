@@ -32,18 +32,18 @@ pub enum ProviderSubcommands {
     },
 }
 
-pub async fn handle(cmd: ProviderCommands, json: bool) -> Result<()> {
+pub async fn handle(cmd: ProviderCommands, json: bool, load_env: bool) -> Result<()> {
     match cmd.command {
-        ProviderSubcommands::List => list_providers(json).await,
+        ProviderSubcommands::List => list_providers(json, load_env).await,
         ProviderSubcommands::Connect { provider } => connect_provider(&provider).await,
         ProviderSubcommands::Disconnect { provider } => disconnect_provider(&provider).await,
-        ProviderSubcommands::Show { provider } => show_provider(&provider, json).await,
+        ProviderSubcommands::Show { provider } => show_provider(&provider, json, load_env).await,
     }
 }
 
-async fn list_providers(json: bool) -> Result<()> {
+async fn list_providers(json: bool, load_env: bool) -> Result<()> {
     let registry = build_registry();
-    let app_config = config::load_config()?;
+    let app_config = config::load_config_with_env(load_env)?;
 
     let mut rows = Vec::new();
     for provider in registry.list_providers() {
@@ -137,11 +137,11 @@ async fn disconnect_provider(provider_id: &str) -> Result<()> {
     Ok(())
 }
 
-async fn show_provider(provider_id: &str, json: bool) -> Result<()> {
+async fn show_provider(provider_id: &str, json: bool, load_env: bool) -> Result<()> {
     let registry = build_registry();
     let provider = registry.find_provider(provider_id)?;
     let d = provider.descriptor();
-    let app_config = config::load_config()?;
+    let app_config = config::load_config_with_env(load_env)?;
 
     let prov_config = app_config.providers.get(&d.id);
     let status = if prov_config.is_some_and(|c| c.connected && c.get_api_key().is_some()) {

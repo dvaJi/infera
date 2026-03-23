@@ -58,22 +58,22 @@ pub enum AppSubcommands {
     },
 }
 
-pub async fn handle(cmd: AppCommands, json: bool) -> Result<()> {
+pub async fn handle(cmd: AppCommands, json: bool, load_env: bool) -> Result<()> {
     match cmd.command {
         AppSubcommands::List {
             category,
             provider,
             page,
             per_page,
-        } => list_apps(category, provider, page, per_page, json).await,
+        } => list_apps(category, provider, page, per_page, json, load_env).await,
         AppSubcommands::Run {
             app,
             input,
             input_file,
             stream,
             output,
-        } => run_app(app, input, input_file, stream, output, json).await,
-        AppSubcommands::Show { app } => show_app(app, json).await,
+        } => run_app(app, input, input_file, stream, output, json, load_env).await,
+        AppSubcommands::Show { app } => show_app(app, json, load_env).await,
     }
 }
 
@@ -83,9 +83,10 @@ async fn list_apps(
     page: usize,
     per_page: usize,
     json: bool,
+    load_env: bool,
 ) -> Result<()> {
     let registry = build_registry();
-    let app_config = config::load_config()?;
+    let app_config = config::load_config_with_env(load_env)?;
     let catalog = Catalog::new(&registry, &app_config);
 
     let apps = if let Some(provider_id) = &provider_filter {
@@ -177,6 +178,7 @@ async fn run_app(
     stream: bool,
     output: Option<PathBuf>,
     json: bool,
+    load_env: bool,
 ) -> Result<()> {
     let app_id = AppId::parse(&app_str)?;
 
@@ -201,7 +203,7 @@ async fn run_app(
     let registry = build_registry();
     let provider = registry.find_provider(&app_id.provider)?;
 
-    let app_config = config::load_config()?;
+    let app_config = config::load_config_with_env(load_env)?;
     let prov_config = app_config
         .providers
         .get(&app_id.provider)
@@ -299,11 +301,11 @@ async fn save_images(urls: &[String], base_path: &std::path::Path) -> Result<()>
     Ok(())
 }
 
-async fn show_app(app_str: String, json: bool) -> Result<()> {
+async fn show_app(app_str: String, json: bool, load_env: bool) -> Result<()> {
     let app_id = AppId::parse(&app_str)?;
 
     let registry = build_registry();
-    let app_config = config::load_config()?;
+    let app_config = config::load_config_with_env(load_env)?;
     let catalog = Catalog::new(&registry, &app_config);
 
     let app = catalog

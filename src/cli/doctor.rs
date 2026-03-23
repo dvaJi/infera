@@ -3,7 +3,7 @@ use crate::providers::registry::build_registry;
 use crate::types::ProviderConnectionStatus;
 use anyhow::Result;
 
-pub async fn handle() -> Result<()> {
+pub async fn handle(load_env: bool) -> Result<()> {
     println!("infs Doctor");
     println!("===========");
     println!();
@@ -23,7 +23,7 @@ pub async fn handle() -> Result<()> {
 
     // Check providers
     let registry = build_registry();
-    let app_config = config::load_config()?;
+    let app_config = config::load_config_with_env(load_env)?;
 
     println!("Providers:");
     for provider in registry.list_providers() {
