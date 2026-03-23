@@ -176,7 +176,10 @@ async fn fetch_latest_release() -> Result<GitHubRelease> {
 }
 
 fn parse_version(tag: &str) -> Result<Version> {
-    let version_str = tag.trim_start_matches('v').trim_start_matches("infs-");
+    let version_str = tag
+        .trim_start_matches("infs-v")
+        .trim_start_matches("infs-")
+        .trim_start_matches('v');
     Version::parse(version_str).context(format!("Failed to parse version from tag: {}", tag))
 }
 
