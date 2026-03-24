@@ -164,6 +164,7 @@ Binary targets built on each release:
 
 - Always run `cargo test` before submitting a PR.
 - Always use `cargo fmt` and `cargo clippy` to maintain code quality and consistency.
+- Always keep `README.md` up to date when shipping user-visible features, CLI behavior changes, new workflows, or credential/auth changes that matter to users.
 - If you are unsure how to do something, use `gh_grep` to search code examples from GitHub.
 
 ## Things to Avoid
