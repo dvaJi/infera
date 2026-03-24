@@ -395,7 +395,7 @@ See [ROADMAP.md](ROADMAP.md) for the full roadmap. Summary:
 - [x] Self-update functionality (`infs self update`)
 
 **Planned:**
-- [ ] Streaming LLM responses
+ - [ ] Streaming LLM responses
 - [ ] Paginated model listing for providers returning large catalogs
 - [ ] File output for image generation (download to local file)
 - [ ] File input support
