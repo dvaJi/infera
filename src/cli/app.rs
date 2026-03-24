@@ -1,7 +1,7 @@
 use crate::catalog::Catalog;
 use crate::config;
 use crate::providers::registry::build_registry;
-use crate::types::AppId;
+use crate::types::{AppCategory, AppDescriptor, AppId};
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
@@ -14,14 +14,13 @@ pub struct AppCommands {
 
 #[derive(Subcommand)]
 pub enum AppSubcommands {
-    /// List available apps/models
+    /// List providers or available apps/models
     List {
+        /// Provider ID to list models for (e.g. openrouter)
+        provider: Option<String>,
         /// Filter by category (image, llm, audio, video)
         #[arg(long)]
         category: Option<String>,
-        /// Filter by provider
-        #[arg(long)]
-        provider: Option<String>,
         /// Page number for paginated output (1-based)
         #[arg(long, default_value_t = 1)]
         page: usize,
@@ -87,24 +86,154 @@ async fn list_apps(
 ) -> Result<()> {
     let registry = build_registry();
     let app_config = config::load_config_with_env(load_env)?;
-    let catalog = Catalog::new(&registry, &app_config);
 
-    let apps = if let Some(provider_id) = &provider_filter {
-        // Verify provider exists, then fetch live
-        registry.find_provider(provider_id)?;
-        catalog.list_apps_by_provider(provider_id).await?
-    } else if let Some(cat_str) = &category_filter {
-        let category = parse_category(cat_str)?;
-        catalog.list_apps_by_category(&category).await
-    } else {
-        catalog.list_all_apps().await
+    if let Some(provider_id) = &provider_filter {
+        let provider = registry.find_provider(provider_id)?;
+        let prov_config = app_config
+            .providers
+            .get(provider_id)
+            .cloned()
+            .unwrap_or_default();
+
+        let apps = provider.list_apps(&prov_config).await?;
+        let apps = filter_apps_by_category(apps, category_filter.as_deref())?;
+
+        return print_app_list(
+            provider.descriptor().display_name.as_str(),
+            provider_id,
+            apps,
+            page,
+            per_page,
+            json,
+        );
+    }
+
+    let category = match category_filter.as_deref() {
+        Some(cat) => Some(parse_category(cat)?),
+        None => None,
     };
 
-    let total = apps.len();
+    let mut providers = Vec::new();
+    for provider in registry.list_providers() {
+        let descriptor = provider.descriptor();
 
-    // Apply pagination.
-    // Clamp total_pages to a minimum of 1 so that page can always be clamped
-    // to 1..=total_pages even when the catalog is empty.
+        if let Some(category) = &category {
+            if !descriptor.categories.contains(category) {
+                continue;
+            }
+        }
+
+        let prov_config = app_config.providers.get(&descriptor.id);
+        let status = match prov_config {
+            Some(config) if !config.credentials.is_empty() => "available",
+            _ => "needs_credentials",
+        };
+
+        providers.push(serde_json::json!({
+            "id": descriptor.id,
+            "name": descriptor.display_name,
+            "status": status,
+            "categories": descriptor
+                .categories
+                .iter()
+                .map(|category| category.to_string())
+                .collect::<Vec<_>>(),
+            "website": descriptor.website,
+        }));
+    }
+
+    let total = providers.len();
+    let per_page = per_page.max(1);
+    let total_pages = total.div_ceil(per_page).max(1);
+    let page = page.max(1).min(total_pages);
+    let start = (page - 1) * per_page;
+    let page_providers: Vec<_> = providers
+        .iter()
+        .skip(start)
+        .take(per_page)
+        .cloned()
+        .collect();
+
+    if json {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "total": total,
+                "page": page,
+                "per_page": per_page,
+                "total_pages": total_pages,
+                "providers": page_providers,
+            }))?
+        );
+        return Ok(());
+    }
+
+    println!("{:<15} {:<25} {:<20} CATEGORIES", "ID", "NAME", "STATUS");
+    println!("{}", "-".repeat(90));
+
+    for provider in &page_providers {
+        let id = provider["id"].as_str().unwrap_or_default();
+        let name = provider["name"].as_str().unwrap_or_default();
+        let status = match provider["status"].as_str().unwrap_or_default() {
+            "available" => "available",
+            _ => "needs credentials",
+        };
+        let categories = provider["categories"]
+            .as_array()
+            .map(|items| {
+                items
+                    .iter()
+                    .filter_map(|item| item.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            })
+            .unwrap_or_default();
+
+        println!("{:<15} {:<25} {:<20} {}", id, name, status, categories);
+    }
+
+    eprintln!();
+    eprintln!("Use `infs app list <id>` to see all models for a provider.");
+    if total_pages > 1 {
+        eprintln!(
+            "Page {}/{} - showing {}-{} of {} providers",
+            page,
+            total_pages,
+            start + 1,
+            (start + page_providers.len()).min(total),
+            total
+        );
+    } else {
+        eprintln!("Total: {} providers", total);
+    }
+
+    Ok(())
+}
+
+fn filter_apps_by_category(
+    apps: Vec<AppDescriptor>,
+    category_filter: Option<&str>,
+) -> Result<Vec<AppDescriptor>> {
+    let Some(category_filter) = category_filter else {
+        return Ok(apps);
+    };
+
+    let category = parse_category(category_filter)?;
+    Ok(apps
+        .into_iter()
+        .filter(|app| app.category == category)
+        .collect())
+}
+
+fn print_app_list(
+    provider_name: &str,
+    provider_id: &str,
+    apps: Vec<AppDescriptor>,
+    page: usize,
+    per_page: usize,
+    json: bool,
+) -> Result<()> {
+    let total = apps.len();
     let per_page = per_page.max(1);
     let total_pages = total.div_ceil(per_page).max(1);
     let page = page.max(1).min(total_pages);
@@ -127,6 +256,7 @@ async fn list_apps(
         println!(
             "{}",
             serde_json::to_string_pretty(&serde_json::json!({
+                "provider": provider_id,
                 "total": total,
                 "page": page,
                 "per_page": per_page,
@@ -134,38 +264,40 @@ async fn list_apps(
                 "apps": json_apps,
             }))?
         );
-    } else {
+        return Ok(());
+    }
+
+    println!("Provider: {} ({})", provider_name, provider_id);
+    println!(
+        "{:<45} {:<25} {:<10} DESCRIPTION",
+        "FULL ID", "NAME", "CATEGORY"
+    );
+    println!("{}", "-".repeat(110));
+
+    for app in &page_apps {
+        let full_id = app.full_id();
+        let truncated_desc = truncate_str(&app.description, 40);
         println!(
-            "{:<45} {:<25} {:<10} DESCRIPTION",
-            "FULL ID", "NAME", "CATEGORY"
+            "{:<45} {:<25} {:<10} {}",
+            full_id, app.display_name, app.category, truncated_desc
         );
-        println!("{}", "-".repeat(110));
+    }
 
-        for app in &page_apps {
-            let full_id = app.full_id();
-            let truncated_desc = truncate_str(&app.description, 40);
-            println!(
-                "{:<45} {:<25} {:<10} {}",
-                full_id, app.display_name, app.category, truncated_desc
-            );
+    eprintln!();
+    if total_pages > 1 {
+        eprintln!(
+            "Page {}/{} - showing {}-{} of {} apps",
+            page,
+            total_pages,
+            start + 1,
+            (start + page_apps.len()).min(total),
+            total
+        );
+        if page < total_pages {
+            eprintln!("Use --page {} to see the next page.", page + 1);
         }
-
-        eprintln!();
-        if total_pages > 1 {
-            eprintln!(
-                "Page {}/{} — showing {}-{} of {} apps",
-                page,
-                total_pages,
-                start + 1,
-                (start + page_apps.len()).min(total),
-                total
-            );
-            if page < total_pages {
-                eprintln!("Use --page {} to see the next page.", page + 1);
-            }
-        } else {
-            eprintln!("Total: {} apps", total);
-        }
+    } else {
+        eprintln!("Total: {} apps", total);
     }
 
     Ok(())
@@ -182,12 +314,10 @@ async fn run_app(
 ) -> Result<()> {
     let app_id = AppId::parse(&app_str)?;
 
-    // Reject the invalid --json + --stream combination up front.
     if json && stream {
         anyhow::bail!("--json and --stream cannot be used together");
     }
 
-    // Resolve input: --input takes precedence, --input-file as alternative
     let input_str = if let Some(path) = input_file {
         std::fs::read_to_string(&path)
             .map_err(|e| anyhow::anyhow!("Failed to read input file '{}': {}", path.display(), e))?
@@ -216,19 +346,18 @@ async fn run_app(
         eprintln!("Running {}/{}...", app_id.provider, app_id.app);
     }
 
-    // Streaming mode: print tokens as they arrive
     if stream {
         if provider.supports_streaming() {
             provider
                 .stream_app(&app_id.app, input, &prov_config)
                 .await?;
             return Ok(());
-        } else {
-            eprintln!(
-                "Note: --stream is not supported for provider '{}', using non-streaming mode.",
-                app_id.provider
-            );
         }
+
+        eprintln!(
+            "Note: --stream is not supported for provider '{}', using non-streaming mode.",
+            app_id.provider
+        );
     }
 
     let response = provider.run_app(&app_id.app, input, &prov_config).await?;
@@ -237,9 +366,7 @@ async fn run_app(
         println!("{}", serde_json::to_string_pretty(&response)?);
     } else {
         match &response.output {
-            crate::types::RunOutput::Text(text) => {
-                println!("{}", text);
-            }
+            crate::types::RunOutput::Text(text) => println!("{}", text),
             crate::types::RunOutput::ImageUrls(urls) => {
                 if let Some(out_path) = &output {
                     save_images(urls, out_path).await?;
@@ -264,10 +391,6 @@ async fn run_app(
     Ok(())
 }
 
-/// Download image URLs and save them to local files.
-///
-/// - Single image: saved to `base_path` as-is.
-/// - Multiple images: saved to `{stem}_{i}{ext}` (e.g. `out_0.png`, `out_1.png`).
 async fn save_images(urls: &[String], base_path: &std::path::Path) -> Result<()> {
     let client = reqwest::Client::new();
     for (i, url) in urls.iter().enumerate() {
@@ -347,13 +470,13 @@ async fn show_app(app_str: String, json: bool, load_env: bool) -> Result<()> {
     Ok(())
 }
 
-fn parse_category(s: &str) -> Result<crate::types::AppCategory> {
+fn parse_category(s: &str) -> Result<AppCategory> {
     match s.to_lowercase().as_str() {
-        "image" => Ok(crate::types::AppCategory::Image),
-        "llm" => Ok(crate::types::AppCategory::Llm),
-        "audio" => Ok(crate::types::AppCategory::Audio),
-        "video" => Ok(crate::types::AppCategory::Video),
-        "other" => Ok(crate::types::AppCategory::Other),
+        "image" => Ok(AppCategory::Image),
+        "llm" => Ok(AppCategory::Llm),
+        "audio" => Ok(AppCategory::Audio),
+        "video" => Ok(AppCategory::Video),
+        "other" => Ok(AppCategory::Other),
         _ => Err(anyhow::anyhow!(
             "Unknown category: '{}'. Valid: image, llm, audio, video, other",
             s
@@ -361,9 +484,8 @@ fn parse_category(s: &str) -> Result<crate::types::AppCategory> {
     }
 }
 
-/// Truncate a string to at most `max_chars` Unicode scalar values, appending "..." if truncated.
 fn truncate_str(s: &str, max_chars: usize) -> String {
-    let mut last_boundary = 0usize; // byte index of the trim point (max_chars - 3)
+    let mut last_boundary = 0usize;
     let trim_to = max_chars.saturating_sub(3);
 
     for (char_count, (byte_idx, _ch)) in s.char_indices().enumerate() {
@@ -371,12 +493,11 @@ fn truncate_str(s: &str, max_chars: usize) -> String {
             last_boundary = byte_idx;
         }
         if char_count == max_chars {
-            // Need to truncate — use the saved boundary
             let mut out = s[..last_boundary].to_string();
             out.push_str("...");
             return out;
         }
     }
-    // String fits within max_chars — return as-is
+
     s.to_string()
 }

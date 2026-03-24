@@ -1,7 +1,7 @@
 use crate::config::AppConfig;
 use crate::error::InfsError;
 use crate::providers::registry::ProviderRegistry;
-use crate::types::{AppCategory, AppDescriptor};
+use crate::types::AppDescriptor;
 
 pub struct Catalog<'a> {
     registry: &'a ProviderRegistry,
@@ -14,37 +14,6 @@ impl<'a> Catalog<'a> {
             registry,
             app_config,
         }
-    }
-
-    pub async fn list_all_apps(&self) -> Vec<AppDescriptor> {
-        let mut apps = Vec::new();
-        for provider in self.registry.list_providers() {
-            let prov_config = self
-                .app_config
-                .providers
-                .get(provider.descriptor().id.as_str())
-                .cloned()
-                .unwrap_or_default();
-            match provider.list_apps(&prov_config).await {
-                Ok(provider_apps) => apps.extend(provider_apps),
-                Err(e) => {
-                    tracing::warn!(
-                        "Failed to list apps from {}: {}",
-                        provider.descriptor().id,
-                        e
-                    );
-                }
-            }
-        }
-        apps
-    }
-
-    pub async fn list_apps_by_category(&self, category: &AppCategory) -> Vec<AppDescriptor> {
-        self.list_all_apps()
-            .await
-            .into_iter()
-            .filter(|app| &app.category == category)
-            .collect()
     }
 
     pub async fn list_apps_by_provider(

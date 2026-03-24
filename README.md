@@ -131,20 +131,28 @@ infs provider disconnect openrouter
 ### App/model management
 
 ```bash
-# List all available apps/models
+# List providers and whether they are ready to use
 infs app list
+
+# List all models for a specific provider
+infs app list openrouter
+infs app list falai
 
 # Filter by category
 infs app list --category image
 infs app list --category llm
 
-# Filter by provider
-infs app list --provider openrouter
-infs app list --provider falai
+# Filter a provider's models by category
+infs app list openrouter --category llm
 
 # Show details for a specific app
 infs app show openrouter/anthropic/claude-sonnet-4-5
 ```
+
+`infs app list` has two modes:
+
+- Without a provider, it shows providers with status like `available` or `needs credentials`
+- With a provider argument, it lists that provider's models and supports pagination
 
 ### Running apps
 
@@ -326,6 +334,8 @@ OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxx
 Then run any command — no `provider connect` needed:
 
 ```bash
+infs app list
+infs app list openrouter
 infs app run openrouter/meta-llama/llama-3.1-8b-instruct --input '{"prompt":"What is the capital of France?"}'
 ```
 
