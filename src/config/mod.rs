@@ -218,7 +218,7 @@ pub fn keyring_delete(provider_id: &str, cred_key: &str) -> Result<(), InfsError
 // ---------------------------------------------------------------------------
 
 pub fn load_config() -> Result<AppConfig, InfsError> {
-    load_config_with_env(true)
+    load_config_with_env(false)
 }
 
 pub fn load_config_with_env(load_env: bool) -> Result<AppConfig, InfsError> {
