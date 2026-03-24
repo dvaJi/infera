@@ -24,6 +24,10 @@ pub struct Cli {
     #[arg(long, global = true)]
     pub json: bool,
 
+    /// Skip loading .env files from current directory and parent directories
+    #[arg(long, global = true)]
+    pub no_env: bool,
+
     #[command(subcommand)]
     pub command: Commands,
 }
