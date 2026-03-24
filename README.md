@@ -245,6 +245,58 @@ Two files are used:
 
 > **Note:** On Unix, `credentials.toml` is written with file mode `0600` (owner read/write only). A future version will optionally integrate with the OS keychain via the `keyring` crate.
 
+### Environment Variables (.env)
+
+`infs` can automatically load provider credentials from environment variables. This is useful for:
+- **CI/CD pipelines** — inject secrets via environment variables
+- **Monorepos** — share a single `.env` file across multiple projects
+- **Quick setup** — skip the interactive `provider connect` flow
+
+#### How it works
+
+1. Create a `.env` file in your project directory (or any parent directory up to 3 levels)
+2. Set the environment variables for your providers
+3. Run `infs` commands — credentials are automatically detected
+
+#### Supported environment variables
+
+| Provider | Environment Variable |
+|----------|---------------------|
+| OpenRouter | `OPENROUTER_API_KEY` |
+| fal.ai | `FALAI_API_KEY` |
+| Replicate | `REPLICATE_API_TOKEN` |
+| WaveSpeed | `WAVESPEED_API_KEY` |
+
+#### Example `.env` file
+
+```bash
+# .env
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxx
+FALAI_API_KEY=xxxxxxxxxxxxx
+REPLICATE_API_TOKEN=r8_xxxxxxxxxxxxx
+WAVESPEED_API_KEY=xxxxxxxxxxxxx
+```
+
+#### Credentials priority
+
+When multiple sources are available, `infs` uses this priority (highest wins):
+
+1. **OS keychain** — most secure, managed via `infs provider connect`
+2. **credentials.toml** — fallback file storage
+3. **.env / environment variables** — lowest priority, good for defaults
+
+#### Disabling .env loading
+
+To skip `.env` loading and use only the credentials manager:
+
+```bash
+infs --no-env provider list
+```
+
+This is useful when you want to ensure only stored credentials are used, ignoring any environment variables.
+
+> **Security note:** Never commit `.env` files to version control. Add `.env` to your `.gitignore`.
+
 ### Connecting to OpenRouter
 
 ```bash
@@ -262,7 +314,22 @@ Auth method: API Key
 
 ## Examples
 
-### Ask a question
+### Quick start with .env (recommended for development)
+
+Create a `.env` file with your API keys:
+
+```bash
+# .env
+OPENROUTER_API_KEY=sk-or-v1-xxxxxxxxxxxxx
+```
+
+Then run any command — no `provider connect` needed:
+
+```bash
+infs app run openrouter/meta-llama/llama-3.1-8b-instruct --input '{"prompt":"What is the capital of France?"}'
+```
+
+### Ask a question (interactive setup)
 
 ```bash
 infs provider connect openrouter  # First time only
