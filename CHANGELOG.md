@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.4.0](https://github.com/dvaJi/infera/compare/infs-v0.3.0...infs-v0.4.0) (2026-03-25)
+
+
+### Features
+
+* add .env file support for provider credentials ([8c02842](https://github.com/dvaJi/infera/commit/8c02842a82af2078067898c70a216cf15a8d59a0))
+* add .env file support for provider credentials ([8fdc998](https://github.com/dvaJi/infera/commit/8fdc99814bd9cd476b66a57e1768440039998afb))
+* improve app list provider discovery ([bdb5f69](https://github.com/dvaJi/infera/commit/bdb5f69ca62e4bb4b9a8c6bfc1f03da85a075ec5))
+
+
+### Bug Fixes
+
+* disable environment loading in load_config function ([b838f78](https://github.com/dvaJi/infera/commit/b838f7827a91987b6645fe5d435204c1506ee2e8))
+* handle infs-v prefix in version tag parsing ([930cd7a](https://github.com/dvaJi/infera/commit/930cd7a31eba08e4d5bb288a98d9fd2fdfdc5092))
+* honor --no-env and stabilize dotenv tests ([ef0249e](https://github.com/dvaJi/infera/commit/ef0249e4dc1ef0134af18206178d03b2227c930e))
+
+
+### Documentation
+
+* add .env file support and update documentation ([1ea0f25](https://github.com/dvaJi/infera/commit/1ea0f25ac12eca02fdadc3dea5db8c3f2ba89b05))
+* add comprehensive .env usage documentation ([70ee1bf](https://github.com/dvaJi/infera/commit/70ee1bf419b097f4f3fb94b0db13230489fd9151))
+* require README updates for user-facing changes ([90618cf](https://github.com/dvaJi/infera/commit/90618cf0ebb94ae0ffe88acfeb3480195f8058ac))
+
 ## [0.3.0](https://github.com/dvaJi/infera/compare/infs-v0.2.0...infs-v0.3.0) (2026-03-22)
 
 
