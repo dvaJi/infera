@@ -26,6 +26,27 @@ echo '{"prompt": "Explain machine learning"}' > input.json
 infs app run openrouter/openai/gpt-4o --input-file input.json
 ```
 
+### Local files (multimodal models)
+
+Use `--file` to pass local images, PDFs, audio, or video files to multimodal models:
+
+```bash
+# Single image with prompt
+infs app run openrouter/openai/gpt-4o --file photo.jpg --prompt "What's in this image?"
+
+# Multiple files
+infs app run openrouter/openai/gpt-4o --file img1.png --file img2.jpg --prompt "Compare these images"
+
+# Image editing (WaveSpeed)
+infs app run wavespeed/google/nano-banana-2/edit --file input.png --prompt "Make it sepia"
+```
+
+Supported file types are auto-detected from extension:
+- Images: `png`, `jpg`, `jpeg`, `gif`, `webp`
+- Documents: `pdf`
+- Audio: `mp3`, `wav`, `flac`
+- Video: `mp4`, `webm`
+
 ## LLM Examples (OpenRouter)
 
 ```bash

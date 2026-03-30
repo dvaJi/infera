@@ -43,6 +43,18 @@ infs app run openrouter/anthropic/claude-sonnet-4-5 --input '{"prompt":"Explain 
 
 # Generate an image
 infs app run falai/fal-ai/flux/dev --input '{"prompt":"a cat astronaut in space"}'
+
+# Stream LLM response
+infs app run openrouter/openai/gpt-4o --input '{"prompt":"Count to 10"}' --stream
+
+# Save generated image to file
+infs app run wavespeed/google/nano-banana-2 --input '{"prompt":"a cat"}' --output image.png
+
+# Use local image with multimodal model
+infs app run openrouter/openai/gpt-4o --file photo.jpg --prompt "What's in this image?"
+
+# Image editing with WaveSpeed
+infs app run wavespeed/google/nano-banana-2/edit --file input.png --prompt "Make it sepia"
 ```
 
 ## Composing Skills in Agent Workflows

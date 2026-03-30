@@ -145,6 +145,9 @@ infs app list --category llm
 # Filter a provider's models by category
 infs app list openrouter --category llm
 
+# Paginate results (page number and items per page)
+infs app list openrouter --page 2 --per-page 50
+
 # Show details for a specific app
 infs app show openrouter/anthropic/claude-sonnet-4-5
 ```
@@ -152,7 +155,7 @@ infs app show openrouter/anthropic/claude-sonnet-4-5
 `infs app list` has two modes:
 
 - Without a provider, it shows providers with status like `available` or `needs credentials`
-- With a provider argument, it lists that provider's models and supports pagination
+- With a provider argument, it lists that provider's models and supports pagination (`--page` and `--per-page` flags)
 
 ### Running apps
 
@@ -166,6 +169,9 @@ infs app run openrouter/openai/gpt-4o --input '{"prompt":"Write a haiku about Ru
 # Run a free model
 infs app run openrouter/meta-llama/llama-3.1-8b-instruct --input '{"prompt":"What is 2+2?"}'
 
+# Stream LLM response token by token
+infs app run openrouter/openai/gpt-4o --input '{"prompt":"Count to 10"}' --stream
+
 # Image generation via WaveSpeed AI
 infs app run wavespeed/wavespeed-ai/flux-schnell --input '{"prompt":"a cat astronaut in space"}'
 
@@ -174,6 +180,21 @@ infs app run wavespeed/google/nano-banana-2 --input '{"prompt":"a serene mountai
 
 # Image generation via fal.ai
 infs app run falai/fal-ai/flux/dev --input '{"prompt":"a cat astronaut in space"}'
+
+# Save generated image to file (auto-detects extension)
+infs app run wavespeed/google/nano-banana-2 --input '{"prompt":"a cat"}' --output image
+
+# Save generated image with specific extension
+infs app run wavespeed/google/nano-banana-2 --input '{"prompt":"a cat"}' --output image.png
+
+# Use local image file with multimodal model (OpenRouter)
+infs app run openrouter/openai/gpt-4o --file photo.jpg --prompt "What's in this image?"
+
+# Use local image file with WaveSpeed image editing
+infs app run wavespeed/google/nano-banana-2/edit --file input.png --prompt "Make it sepia"
+
+# Multiple image files
+infs app run openrouter/openai/gpt-4o --file img1.png --file img2.jpg --prompt "Compare these images"
 ```
 
 ### Utilities
@@ -456,8 +477,6 @@ cargo test
 ## Known Limitations
 
 - Model listing requires an API key for fal.ai, Replicate, and WaveSpeed; a static fallback is shown when not connected
-- No streaming support for LLM responses
-- No file input/output for image generation artifacts
 
 ## Roadmap
 
@@ -470,12 +489,10 @@ See [ROADMAP.md](ROADMAP.md) for the full roadmap. Summary:
 - [x] Shell completion scripts (`infs completions bash/zsh/fish/powershell/elvish`)
 - [x] Retry logic with exponential backoff
 - [x] Self-update functionality (`infs self update`)
-
-**Planned:**
- - [ ] Streaming LLM responses
-- [ ] Paginated model listing for providers returning large catalogs
-- [ ] File output for image generation (download to local file)
-- [ ] File input support
+- [x] Streaming LLM responses (`--stream` flag)
+- [x] Paginated model listing (`--page` and `--per-page` flags)
+- [x] File output for image generation (`--output` flag)
+- [x] File input support (`--file` flag for multimodal models)
 - [ ] More providers (ElevenLabs, Stability AI, etc.)
 - [ ] OAuth support for providers that require it
 

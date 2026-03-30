@@ -43,6 +43,14 @@ pub enum AppSubcommands {
         /// Read input JSON from a file instead of --input
         #[arg(long, conflicts_with = "input")]
         input_file: Option<PathBuf>,
+        /// Path to a local file (image, audio, etc.) to include in the request.
+        /// The file will be base64-encoded and sent as a data URL.
+        /// Can be specified multiple times for multiple files.
+        #[arg(long)]
+        file: Vec<PathBuf>,
+        /// Text prompt to use with --file. Required when using --file without --input.
+        #[arg(long)]
+        prompt: Option<String>,
         /// Stream output token by token (LLM providers only)
         #[arg(long)]
         stream: bool,
@@ -69,9 +77,16 @@ pub async fn handle(cmd: AppCommands, json: bool, load_env: bool) -> Result<()> 
             app,
             input,
             input_file,
+            file,
+            prompt,
             stream,
             output,
-        } => run_app(app, input, input_file, stream, output, json, load_env).await,
+        } => {
+            run_app(
+                app, input, input_file, file, prompt, stream, output, json, load_env,
+            )
+            .await
+        }
         AppSubcommands::Show { app } => show_app(app, json, load_env).await,
     }
 }
@@ -308,6 +323,8 @@ async fn run_app(
     app_str: String,
     input_arg: Option<String>,
     input_file: Option<PathBuf>,
+    files: Vec<PathBuf>,
+    prompt_arg: Option<String>,
     stream: bool,
     output: Option<PathBuf>,
     json: bool,
@@ -319,20 +336,77 @@ async fn run_app(
         anyhow::bail!("--json and --stream cannot be used together");
     }
 
-    let input_str = if let Some(path) = input_file {
-        std::fs::read_to_string(&path)
-            .map_err(|e| anyhow::anyhow!("Failed to read input file '{}': {}", path.display(), e))?
-    } else if let Some(s) = input_arg {
-        s
-    } else {
-        anyhow::bail!("Provide input via --input or --input-file");
-    };
+    if !files.is_empty() && input_arg.is_some() {
+        anyhow::bail!("Cannot use both --input and --file together");
+    }
 
-    let input: serde_json::Value = serde_json::from_str(&input_str)
-        .map_err(|e| crate::error::InfsError::InvalidInput(format!("Invalid JSON input: {}", e)))?;
+    if !files.is_empty() && input_file.is_some() {
+        anyhow::bail!("Cannot use both --input-file and --file together");
+    }
 
     let registry = build_registry();
     let provider = registry.find_provider(&app_id.provider)?;
+
+    let input: serde_json::Value = if !files.is_empty() {
+        if app_id.provider == "wavespeed" {
+            let mut images: Vec<String> = Vec::new();
+            for file_path in &files {
+                let (mime_type, base64_data) = encode_file_to_data_url(file_path)?;
+                images.push(format!("data:{};base64,{}", mime_type, base64_data));
+            }
+            let mut input_obj = serde_json::Map::new();
+            input_obj.insert(
+                "images".to_string(),
+                serde_json::Value::Array(
+                    images.into_iter().map(serde_json::Value::String).collect(),
+                ),
+            );
+            if let Some(prompt_text) = prompt_arg {
+                input_obj.insert("prompt".to_string(), serde_json::Value::String(prompt_text));
+            }
+            serde_json::Value::Object(input_obj)
+        } else {
+            let mut content_items: Vec<serde_json::Value> = Vec::new();
+
+            if let Some(prompt_text) = prompt_arg {
+                content_items.push(serde_json::json!({
+                    "type": "text",
+                    "text": prompt_text
+                }));
+            }
+
+            for file_path in &files {
+                let (mime_type, base64_data) = encode_file_to_data_url(file_path)?;
+                content_items.push(serde_json::json!({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": format!("data:{};base64,{}", mime_type, base64_data)
+                    }
+                }));
+            }
+
+            serde_json::json!({
+                "messages": [{
+                    "role": "user",
+                    "content": content_items
+                }]
+            })
+        }
+    } else {
+        let input_str = if let Some(path) = input_file {
+            std::fs::read_to_string(&path).map_err(|e| {
+                anyhow::anyhow!("Failed to read input file '{}': {}", path.display(), e)
+            })?
+        } else if let Some(s) = input_arg {
+            s
+        } else {
+            anyhow::bail!("Provide input via --input, --input-file, or --file");
+        };
+
+        serde_json::from_str(&input_str).map_err(|e| {
+            crate::error::InfsError::InvalidInput(format!("Invalid JSON input: {}", e))
+        })?
+    };
 
     let app_config = config::load_config_with_env(load_env)?;
     let prov_config = app_config
@@ -410,6 +484,8 @@ async fn save_images(urls: &[String], base_path: &std::path::Path) -> Result<()>
             base_path.with_file_name(format!("{}_{}{}", stem, i, ext))
         };
 
+        eprintln!("Downloading {}...", url);
+
         let resp = client.get(url).send().await?;
         if !resp.status().is_success() {
             anyhow::bail!(
@@ -418,11 +494,103 @@ async fn save_images(urls: &[String], base_path: &std::path::Path) -> Result<()>
                 resp.status()
             );
         }
+
+        let content_type = resp
+            .headers()
+            .get("content-type")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
+
+        let extension = if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+            ext.to_string()
+        } else {
+            detect_extension(url, content_type).unwrap_or_else(|| "bin".to_string())
+        };
+
+        let final_path = if path.extension().is_none() {
+            path.with_extension(extension)
+        } else {
+            path
+        };
+
         let bytes = resp.bytes().await?;
-        std::fs::write(&path, &bytes)?;
-        eprintln!("Saved image to: {}", path.display());
+        std::fs::write(&final_path, &bytes)?;
+        eprintln!("Saved {} bytes to: {}", bytes.len(), final_path.display());
     }
     Ok(())
+}
+
+fn detect_extension(url: &str, content_type: &str) -> Option<String> {
+    if let Some(ext) = std::path::Path::new(url)
+        .extension()
+        .and_then(|e| e.to_str())
+    {
+        return Some(ext.to_string());
+    }
+
+    let mime = content_type.split(';').next()?.trim();
+    match mime {
+        "image/png" => Some("png".to_string()),
+        "image/jpeg" | "image/jpg" => Some("jpg".to_string()),
+        "image/gif" => Some("gif".to_string()),
+        "image/webp" => Some("webp".to_string()),
+        "video/mp4" => Some("mp4".to_string()),
+        "video/webm" => Some("webm".to_string()),
+        _ => None,
+    }
+}
+
+fn encode_file_to_data_url(path: &std::path::Path) -> Result<(String, String)> {
+    let bytes = std::fs::read(path)
+        .map_err(|e| anyhow::anyhow!("Failed to read file '{}': {}", path.display(), e))?;
+
+    let base64_data = base64_encode(&bytes);
+
+    let mime_type = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .and_then(|ext| match ext.to_lowercase().as_str() {
+            "png" => Some("image/png"),
+            "jpg" | "jpeg" => Some("image/jpeg"),
+            "gif" => Some("image/gif"),
+            "webp" => Some("image/webp"),
+            "pdf" => Some("application/pdf"),
+            "mp3" | "wav" | "flac" => Some("audio/mpeg"),
+            "mp4" => Some("video/mp4"),
+            "webm" => Some("video/webm"),
+            _ => None,
+        })
+        .unwrap_or("application/octet-stream");
+
+    Ok((mime_type.to_string(), base64_data))
+}
+
+fn base64_encode(data: &[u8]) -> String {
+    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut result = String::new();
+
+    for chunk in data.chunks(3) {
+        let b0 = chunk[0] as usize;
+        let b1 = chunk.get(1).copied().unwrap_or(0) as usize;
+        let b2 = chunk.get(2).copied().unwrap_or(0) as usize;
+
+        result.push(CHARS[b0 >> 2] as char);
+        result.push(CHARS[((b0 & 0x03) << 4) | (b1 >> 4)] as char);
+
+        if chunk.len() > 1 {
+            result.push(CHARS[((b1 & 0x0f) << 2) | (b2 >> 6)] as char);
+        } else {
+            result.push('=');
+        }
+
+        if chunk.len() > 2 {
+            result.push(CHARS[b2 & 0x3f] as char);
+        } else {
+            result.push('=');
+        }
+    }
+
+    result
 }
 
 async fn show_app(app_str: String, json: bool, load_env: bool) -> Result<()> {
