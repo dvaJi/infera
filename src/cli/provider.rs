@@ -1,7 +1,7 @@
 use crate::auth;
 use crate::config;
 use crate::providers::registry::build_registry;
-use crate::types::ProviderConnectionStatus;
+use crate::types::{ListOptions, ProviderConnectionStatus};
 use anyhow::Result;
 use clap::{Args, Subcommand};
 
@@ -151,7 +151,8 @@ async fn show_provider(provider_id: &str, json: bool, load_env: bool) -> Result<
     };
 
     let prov_config_for_list = app_config.providers.get(&d.id).cloned().unwrap_or_default();
-    let apps_result = provider.list_apps(&prov_config_for_list).await;
+    let options = ListOptions::default();
+    let apps_result = provider.list_apps(&prov_config_for_list, &options).await;
 
     if json {
         let apps_json: serde_json::Value = match apps_result {

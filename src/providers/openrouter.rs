@@ -3,7 +3,8 @@ use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::retry::with_retry;
 use crate::types::{
-    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse, UsageInfo,
+    AppCategory, AppDescriptor, AuthMethod, ListOptions, ProviderDescriptor, RunOutput,
+    RunResponse, UsageInfo,
 };
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -157,7 +158,11 @@ impl Provider for OpenRouterProvider {
         vec![AuthMethod::ApiKey]
     }
 
-    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError> {
+    async fn list_apps(
+        &self,
+        config: &ProviderConfig,
+        options: &ListOptions,
+    ) -> Result<Vec<AppDescriptor>, InfsError> {
         let api_key = match config.get_api_key() {
             Some(k) => k.to_string(),
             None => {
@@ -165,7 +170,8 @@ impl Provider for OpenRouterProvider {
                 eprintln!(
                     "OpenRouter: showing cached models. Connect with `infs provider connect openrouter` to see the full live catalog."
                 );
-                return Ok(self.static_apps());
+                let all_apps = self.static_apps();
+                return Ok(apply_client_pagination(all_apps, options));
             }
         };
 
@@ -211,6 +217,7 @@ impl Provider for OpenRouterProvider {
             }
         })
         .await
+        .map(|apps| apply_client_pagination(apps, options))
         .or_else(|e| {
             // Only fall back to the static list for transient failures (network / 5xx).
             // Auth errors (401/403) and other client errors are surfaced to the caller.
@@ -219,7 +226,8 @@ impl Provider for OpenRouterProvider {
                     "openrouter: /api/v1/models failed after retries ({}), falling back to static list",
                     e
                 );
-                Ok(self.static_apps())
+                let all_apps = self.static_apps();
+                Ok(apply_client_pagination(all_apps, options))
             } else {
                 Err(e)
             }
@@ -459,4 +467,12 @@ mod tests {
         let provider = OpenRouterProvider::new();
         assert!(provider.supports_streaming());
     }
+}
+
+fn apply_client_pagination(apps: Vec<AppDescriptor>, options: &ListOptions) -> Vec<AppDescriptor> {
+    let offset = options.offset();
+    apps.into_iter()
+        .skip(offset)
+        .take(options.per_page)
+        .collect()
 }

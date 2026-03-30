@@ -6,7 +6,9 @@ pub mod wavespeed;
 
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
-use crate::types::{AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse};
+use crate::types::{
+    AppDescriptor, AuthMethod, ListOptions, ProviderDescriptor, RunOutput, RunResponse,
+};
 use async_trait::async_trait;
 
 #[async_trait]
@@ -16,7 +18,13 @@ pub trait Provider: Send + Sync {
     /// Fetch the list of apps/models from the provider.
     /// When an API key is present in `config`, results are fetched live from the provider API.
     /// When no API key is configured, a static fallback list of well-known models is returned.
-    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError>;
+    /// The `options` parameter provides pagination hints. Providers that support server-side
+    /// pagination should use these values; others will fetch all and apply client-side pagination.
+    async fn list_apps(
+        &self,
+        config: &ProviderConfig,
+        options: &ListOptions,
+    ) -> Result<Vec<AppDescriptor>, InfsError>;
     async fn run_app(
         &self,
         app_id: &str,

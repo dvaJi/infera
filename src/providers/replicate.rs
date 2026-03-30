@@ -2,7 +2,7 @@ use super::Provider;
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::types::{
-    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse,
+    AppCategory, AppDescriptor, AuthMethod, ListOptions, ProviderDescriptor, RunOutput, RunResponse,
 };
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -163,7 +163,12 @@ impl Provider for ReplicateProvider {
 
     /// Fetches models live from https://api.replicate.com/v1/models when an API key is configured.
     /// Falls back to a static list of well-known models when not connected.
-    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError> {
+    /// Uses server-side cursor-based pagination to fetch all pages.
+    async fn list_apps(
+        &self,
+        config: &ProviderConfig,
+        options: &ListOptions,
+    ) -> Result<Vec<AppDescriptor>, InfsError> {
         let api_key = match config.get_api_key() {
             Some(k) => k.to_string(),
             None => {
@@ -171,41 +176,41 @@ impl Provider for ReplicateProvider {
                 eprintln!(
                     "Replicate: showing cached models. Connect with `infs provider connect replicate` to see the full live catalog."
                 );
-                return Ok(self.static_apps());
+                let all_apps = self.static_apps();
+                return Ok(apply_client_pagination(all_apps, options));
             }
         };
 
         let client = reqwest::Client::new();
-        // Replicate uses "Authorization: Token <api_key>" header format
-        let response = client
-            .get("https://api.replicate.com/v1/models")
-            .header("Authorization", format!("Token {}", api_key))
-            .send()
-            .await?;
+        let mut all_models: Vec<ReplicateModel> = Vec::new();
+        let mut next_url: Option<String> = Some("https://api.replicate.com/v1/models".to_string());
 
-        if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_default();
-            tracing::warn!("replicate: /v1/models returned {}: {}", status, body);
-            return Err(InfsError::ApiError {
-                provider: "replicate".to_string(),
-                status: status.as_u16(),
-                message: body,
-            });
+        while let Some(url) = next_url.take() {
+            let response = client
+                .get(&url)
+                .header("Authorization", format!("Token {}", api_key))
+                .send()
+                .await?;
+
+            if !response.status().is_success() {
+                let status = response.status();
+                let body = response.text().await.unwrap_or_default();
+                tracing::warn!("replicate: /v1/models returned {}: {}", status, body);
+                return Err(InfsError::ApiError {
+                    provider: "replicate".to_string(),
+                    status: status.as_u16(),
+                    message: body,
+                });
+            }
+
+            let models_response: ReplicateModelsResponse = response.json().await?;
+            all_models.extend(models_response.results);
+            next_url = models_response.next;
         }
 
-        let models_response: ReplicateModelsResponse = response.json().await?;
+        tracing::debug!("replicate: fetched {} models total", all_models.len());
 
-        if let Some(next_url) = &models_response.next {
-            // TODO: implement pagination to fetch all models, not just the first page
-            tracing::debug!(
-                "replicate: more models available at {} (pagination not yet implemented)",
-                next_url
-            );
-        }
-
-        let apps = models_response
-            .results
+        let apps: Vec<AppDescriptor> = all_models
             .into_iter()
             .map(|m| {
                 let category = infer_replicate_category(&m.owner, &m.name, &m.description);
@@ -220,7 +225,7 @@ impl Provider for ReplicateProvider {
             })
             .collect();
 
-        Ok(apps)
+        Ok(apply_client_pagination(apps, options))
     }
 
     async fn run_app(
@@ -483,4 +488,12 @@ mod tests {
         let out = parse_replicate_output(Some(json!([1, 2, 3])));
         assert!(matches!(out, RunOutput::Json(_)));
     }
+}
+
+fn apply_client_pagination(apps: Vec<AppDescriptor>, options: &ListOptions) -> Vec<AppDescriptor> {
+    let offset = options.offset();
+    apps.into_iter()
+        .skip(offset)
+        .take(options.per_page)
+        .collect()
 }

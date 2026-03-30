@@ -1,7 +1,7 @@
 use crate::config::AppConfig;
 use crate::error::InfsError;
 use crate::providers::registry::ProviderRegistry;
-use crate::types::AppDescriptor;
+use crate::types::{AppDescriptor, ListOptions};
 
 pub struct Catalog<'a> {
     registry: &'a ProviderRegistry,
@@ -27,7 +27,8 @@ impl<'a> Catalog<'a> {
             .get(provider_id)
             .cloned()
             .unwrap_or_default();
-        provider.list_apps(&prov_config).await
+        let options = ListOptions::default();
+        provider.list_apps(&prov_config, &options).await
     }
 
     pub async fn find_app(&self, provider_id: &str, app_id: &str) -> Option<AppDescriptor> {

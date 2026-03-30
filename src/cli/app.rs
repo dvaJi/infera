@@ -1,7 +1,7 @@
 use crate::catalog::Catalog;
 use crate::config;
 use crate::providers::registry::build_registry;
-use crate::types::{AppCategory, AppDescriptor, AppId};
+use crate::types::{AppCategory, AppDescriptor, AppId, ListOptions};
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
@@ -95,7 +95,8 @@ async fn list_apps(
             .cloned()
             .unwrap_or_default();
 
-        let apps = provider.list_apps(&prov_config).await?;
+        let options = ListOptions::new(page, per_page);
+        let apps = provider.list_apps(&prov_config, &options).await?;
         let apps = filter_apps_by_category(apps, category_filter.as_deref())?;
 
         return print_app_list(
