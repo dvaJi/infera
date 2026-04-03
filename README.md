@@ -66,6 +66,14 @@ Download the binary for your platform and place it somewhere on your `PATH`:
 | macOS aarch64 (Apple Silicon) | `infs-macos-aarch64` |
 | Windows x86_64 | `infs-windows-x86_64.exe` |
 
+### Chocolatey (Windows)
+
+```powershell
+choco install infs
+```
+
+The package installs `infs.exe` and adds the `infs` command to your PATH.
+
 **macOS / Linux quick-install example:**
 
 ```bash

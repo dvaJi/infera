@@ -1,0 +1,4 @@
+VERIFICATION
+
+This package is built in GitHub Actions from the tagged source in this repository.
+The Windows binary is compiled from source and embedded in the package at publish time.

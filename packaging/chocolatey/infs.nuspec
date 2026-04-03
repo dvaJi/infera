@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>infs</id>
+    <version>0.0.0</version>
+    <title>infs</title>
+    <authors>dvaji</authors>
+    <owners>dvaji</owners>
+    <projectUrl>https://github.com/dvaji/infera</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A fast, provider-agnostic CLI for discovering, connecting, and executing AI apps and models from multiple providers through one consistent interface.</description>
+    <tags>ai cli llm providers</tags>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>
