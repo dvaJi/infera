@@ -6,6 +6,16 @@ use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
 
+struct RunAppArgs {
+    app: String,
+    input: Option<String>,
+    input_file: Option<PathBuf>,
+    files: Vec<PathBuf>,
+    prompt: Option<String>,
+    stream: bool,
+    output: Option<PathBuf>,
+}
+
 #[derive(Args)]
 pub struct AppCommands {
     #[command(subcommand)]
@@ -83,7 +93,17 @@ pub async fn handle(cmd: AppCommands, json: bool, load_env: bool) -> Result<()> 
             output,
         } => {
             run_app(
-                app, input, input_file, file, prompt, stream, output, json, load_env,
+                RunAppArgs {
+                    app,
+                    input,
+                    input_file,
+                    files: file,
+                    prompt,
+                    stream,
+                    output,
+                },
+                json,
+                load_env,
             )
             .await
         }
@@ -319,17 +339,15 @@ fn print_app_list(
     Ok(())
 }
 
-async fn run_app(
-    app_str: String,
-    input_arg: Option<String>,
-    input_file: Option<PathBuf>,
-    files: Vec<PathBuf>,
-    prompt_arg: Option<String>,
-    stream: bool,
-    output: Option<PathBuf>,
-    json: bool,
-    load_env: bool,
-) -> Result<()> {
+async fn run_app(args: RunAppArgs, json: bool, load_env: bool) -> Result<()> {
+    let app_str = args.app;
+    let input_arg = args.input;
+    let input_file = args.input_file;
+    let files = args.files;
+    let prompt_arg = args.prompt;
+    let stream = args.stream;
+    let output = args.output;
+
     let app_id = AppId::parse(&app_str)?;
 
     if json && stream {
