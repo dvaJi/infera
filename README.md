@@ -408,6 +408,30 @@ infs app run wavespeed/google/nano-banana-2 --input '{"prompt":"a serene mountai
 infs doctor
 ```
 
+## Agent Skills
+
+`infs` ships ready-to-use [agent skills](https://skills.sh) that teach AI coding assistants how to use the CLI. Install them with the [`skills`](https://github.com/vercel-labs/skills) CLI:
+
+```bash
+# Install all skills
+npx skills add dvaJi/infera
+
+# Install a specific skill
+npx skills add dvaJi/infera --skill infs-cli
+npx skills add dvaJi/infera --skill infs-llm
+npx skills add dvaJi/infera --skill infs-image
+```
+
+Available skills:
+
+| Skill | Description |
+|---|---|
+| `infs-cli` | Full CLI reference — providers, apps, configuration, and all commands |
+| `infs-llm` | Run LLMs (Claude, GPT-4o, Gemini, Llama, Mistral) via OpenRouter |
+| `infs-image` | Generate images via fal.ai, Replicate, or WaveSpeed AI |
+
+Works with OpenCode, Claude Code, Cursor, Codex, and [40+ other agents](https://github.com/vercel-labs/skills#supported-agents).
+
 ## Development
 
 ### Architecture
