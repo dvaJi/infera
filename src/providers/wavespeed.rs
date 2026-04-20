@@ -234,7 +234,7 @@ impl Provider for WavespeedProvider {
         let task_id = submit_data.data.id;
         tracing::debug!("wavespeed: submitted task {}", task_id);
 
-        // Step 2: Poll GET /api/v3/predictions/<task_id> until completed or failed
+        // Step 2: Poll GET /api/v3/predictions/<task_id>/result until completed or failed
         let poll_url = format!(
             "https://api.wavespeed.ai/api/v3/predictions/{}/result",
             task_id

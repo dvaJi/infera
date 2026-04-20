@@ -242,6 +242,9 @@ pub fn load_config_with_env(load_env: bool) -> Result<AppConfig, InfsError> {
     // then fall back to credentials.toml for anything not yet migrated.
     for (provider_id, provider_config) in config.providers.iter_mut() {
         for cred_key in &provider_config.keychain_credentials {
+            if provider_config.credentials.contains_key(cred_key) {
+                continue;
+            }
             match keyring_get(provider_id, cred_key)? {
                 Some(value) => {
                     provider_config.credentials.insert(cred_key.clone(), value);
