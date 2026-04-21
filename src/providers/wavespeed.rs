@@ -153,11 +153,12 @@ impl Provider for WavespeedProvider {
             let status = response.status();
             let body = response.text().await.unwrap_or_default();
             tracing::warn!("wavespeed: /api/v3/models returned {}: {}", status, body);
-            return Err(InfsError::ApiError {
-                provider: "wavespeed".to_string(),
-                status: status.as_u16(),
-                message: body,
-            });
+            eprintln!(
+                "WaveSpeed AI: could not fetch live models (HTTP {}). Showing cached models.",
+                status
+            );
+            let all_apps = self.static_apps();
+            return Ok(apply_client_pagination(all_apps, options));
         }
 
         let models_response: WavespeedModelsResponse = response.json().await?;
@@ -233,8 +234,11 @@ impl Provider for WavespeedProvider {
         let task_id = submit_data.data.id;
         tracing::debug!("wavespeed: submitted task {}", task_id);
 
-        // Step 2: Poll GET /api/v3/predictions/<task_id> until completed or failed
-        let poll_url = format!("https://api.wavespeed.ai/api/v3/predictions/{}", task_id);
+        // Step 2: Poll GET /api/v3/predictions/<task_id>/result until completed or failed
+        let poll_url = format!(
+            "https://api.wavespeed.ai/api/v3/predictions/{}/result",
+            task_id
+        );
         const MAX_ATTEMPTS: u32 = 60;
         const POLL_INTERVAL_SECS: u64 = 2;
 
