@@ -29,7 +29,7 @@ pub async fn handle(load_env: bool) -> Result<()> {
     for provider in registry.list_providers() {
         let d = provider.descriptor();
         let prov_config = app_config.providers.get(&d.id);
-        let status = if prov_config.is_some_and(|c| c.connected) {
+        let status = if prov_config.is_some_and(|c| c.connected && c.get_api_key().is_some()) {
             ProviderConnectionStatus::Connected
         } else {
             ProviderConnectionStatus::NotConnected
@@ -41,7 +41,18 @@ pub async fn handle(load_env: bool) -> Result<()> {
         };
 
         println!("  {} {} ({})", icon, d.display_name, d.id);
-        if status == ProviderConnectionStatus::NotConnected {
+        
+        if status == ProviderConnectionStatus::Connected {
+            // Show where the credential is located
+            match config::get_credential_source(&d.id) {
+                Ok(source) => {
+                    println!("    Key location: {}", source.display());
+                }
+                Err(_) => {
+                    // Silently ignore errors in credential source detection
+                }
+            }
+        } else {
             println!("    → Run: infs provider connect {}", d.id);
         }
     }

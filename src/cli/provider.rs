@@ -35,8 +35,8 @@ pub enum ProviderSubcommands {
 pub async fn handle(cmd: ProviderCommands, json: bool, load_env: bool) -> Result<()> {
     match cmd.command {
         ProviderSubcommands::List => list_providers(json, load_env).await,
-        ProviderSubcommands::Connect { provider } => connect_provider(&provider).await,
-        ProviderSubcommands::Disconnect { provider } => disconnect_provider(&provider).await,
+        ProviderSubcommands::Connect { provider } => connect_provider(&provider, load_env).await,
+        ProviderSubcommands::Disconnect { provider } => disconnect_provider(&provider, load_env).await,
         ProviderSubcommands::Show { provider } => show_provider(&provider, json, load_env).await,
     }
 }
@@ -91,7 +91,7 @@ async fn list_providers(json: bool, load_env: bool) -> Result<()> {
     Ok(())
 }
 
-async fn connect_provider(provider_id: &str) -> Result<()> {
+async fn connect_provider(provider_id: &str, load_env: bool) -> Result<()> {
     let registry = build_registry();
     let provider = registry.find_provider(provider_id)?;
     let d = provider.descriptor();
@@ -115,7 +115,7 @@ async fn connect_provider(provider_id: &str) -> Result<()> {
 
     let credentials = auth::prompt_credentials(&auth_descriptor)?;
 
-    config::save_provider_credentials(provider_id, credentials)?;
+    config::save_provider_credentials_with_env(provider_id, credentials, load_env)?;
 
     eprintln!();
     println!("Successfully connected to {}!", d.display_name);
@@ -127,11 +127,11 @@ async fn connect_provider(provider_id: &str) -> Result<()> {
     Ok(())
 }
 
-async fn disconnect_provider(provider_id: &str) -> Result<()> {
+async fn disconnect_provider(provider_id: &str, load_env: bool) -> Result<()> {
     let registry = build_registry();
     let provider = registry.find_provider(provider_id)?;
 
-    config::remove_provider_credentials(provider_id)?;
+    config::remove_provider_credentials_with_env(provider_id, load_env)?;
     println!("Disconnected from {}.", provider.descriptor().display_name);
 
     Ok(())

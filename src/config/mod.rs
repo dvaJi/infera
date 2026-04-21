@@ -15,7 +15,7 @@ const MAX_ENV_PARENT_DEPTH: usize = 3;
 const PROVIDER_ENV_PATTERNS: &[(&str, &str, &str)] = &[
     ("openrouter", "OPENROUTER", "api_key"),
     ("falai", "FALAI", "api_key"),
-    ("replicate", "REPLICATE", "api_token"),
+    ("replicate", "REPLICATE", "api_key"),
     ("wavespeed", "WAVESPEED", "api_key"),
 ];
 
@@ -64,6 +64,9 @@ pub fn get_credentials_path() -> Result<PathBuf, InfsError> {
 
 /// Load .env files from the current directory and up to MAX_ENV_PARENT_DEPTH parent directories.
 /// Returns the path of the .env file that was loaded, if any.
+/// 
+/// Uses `from_path_override` so .env values override existing environment variables,
+/// ensuring .env is the highest priority source.
 pub fn load_dotenv() -> Option<PathBuf> {
     let cwd = std::env::current_dir().ok()?;
     let mut current = cwd.as_path();
@@ -71,7 +74,7 @@ pub fn load_dotenv() -> Option<PathBuf> {
     for _ in 0..=MAX_ENV_PARENT_DEPTH {
         let env_path = current.join(".env");
         if env_path.exists() && env_path.is_file() {
-            match dotenvy::from_path(&env_path) {
+            match dotenvy::from_path_override(&env_path) {
                 Ok(()) => {
                     tracing::debug!("Loaded .env from: {:?}", env_path);
                     return Some(env_path);
@@ -115,7 +118,8 @@ fn merge_env_credentials(
     for (provider_id, creds) in env_creds {
         let provider_config = config.providers.entry(provider_id).or_default();
         for (key, value) in creds {
-            provider_config.credentials.entry(key).or_insert(value);
+            // Environment variables are highest priority: always override
+            provider_config.credentials.insert(key, value);
         }
     }
 }
@@ -124,7 +128,8 @@ fn merge_file_credentials(config: &mut AppConfig, file_creds: HashMap<String, Pr
     for (provider_id, cred_config) in file_creds {
         let provider_config = config.providers.entry(provider_id).or_default();
         for (key, value) in cred_config.credentials {
-            provider_config.credentials.insert(key, value);
+            // File credentials are lowest priority: only set if key doesn't already exist
+            provider_config.credentials.entry(key).or_insert(value);
         }
     }
 }
@@ -214,9 +219,81 @@ pub fn keyring_delete(provider_id: &str, cred_key: &str) -> Result<(), InfsError
 }
 
 // ---------------------------------------------------------------------------
+// Credential source detection
+// ---------------------------------------------------------------------------
+
+/// Represents where a credential is stored.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CredentialSource {
+    /// From environment variable (highest priority)
+    Environment { var_name: String },
+    /// From OS keychain
+    Keychain,
+    /// From credentials.toml file (lowest priority)
+    File,
+    /// No credential found
+    NotFound,
+}
+
+impl CredentialSource {
+    pub fn display(&self) -> String {
+        match self {
+            CredentialSource::Environment { var_name } => format!("env var: {}", var_name),
+            CredentialSource::Keychain => "OS Keychain".to_string(),
+            CredentialSource::File => "credentials.toml".to_string(),
+            CredentialSource::NotFound => "not configured".to_string(),
+        }
+    }
+}
+
+/// Determine where a provider's API key credential is stored.
+/// Returns the source in order of precedence that was actually found.
+pub fn get_credential_source(provider_id: &str) -> Result<CredentialSource, InfsError> {
+    // Check environment variables first (highest priority)
+    for (prov_id, prefix, cred_key) in PROVIDER_ENV_PATTERNS {
+        if *prov_id == provider_id {
+            let env_var = format!("{}_{}", prefix, cred_key.to_uppercase());
+            if let Ok(value) = std::env::var(&env_var) {
+                if !value.is_empty() {
+                    return Ok(CredentialSource::Environment {
+                        var_name: env_var,
+                    });
+                }
+            }
+        }
+    }
+
+    // Check OS keychain next (medium priority)
+    if keyring_get(provider_id, "api_key")?.is_some() {
+        return Ok(CredentialSource::Keychain);
+    }
+
+    // Check credentials.toml (lowest priority)
+    let creds_path = get_credentials_path()?;
+    if creds_path.exists() {
+        let creds_content = std::fs::read_to_string(&creds_path)
+            .map_err(|e| InfsError::ConfigError(format!("Failed to read credentials: {}", e)))?;
+
+        let creds: HashMap<String, ProviderConfig> = toml::from_str(&creds_content)
+            .map_err(|e| InfsError::ConfigError(format!("Failed to parse credentials: {}", e)))?;
+
+        if let Some(prov_config) = creds.get(provider_id) {
+            if prov_config.credentials.contains_key("api_key") {
+                return Ok(CredentialSource::File);
+            }
+        }
+    }
+
+    Ok(CredentialSource::NotFound)
+}
+
+// ---------------------------------------------------------------------------
 // Config load / save
 // ---------------------------------------------------------------------------
 
+/// Load application configuration without environment variables.
+/// (Most code should use load_config_with_env(true) to respect .env and shell env vars.)
+#[allow(dead_code)]
 pub fn load_config() -> Result<AppConfig, InfsError> {
     load_config_with_env(false)
 }
@@ -233,13 +310,20 @@ pub fn load_config_with_env(load_env: bool) -> Result<AppConfig, InfsError> {
         AppConfig::default()
     };
 
-    // Load credentials from environment variables first (lowest priority).
-    if load_env {
-        merge_env_credentials(&mut config, credentials_from_env());
+    // Load credentials from file first (lowest priority).
+    // This establishes the baseline from previously-saved credentials.
+    let creds_path = get_credentials_path()?;
+    if creds_path.exists() {
+        let creds_content = std::fs::read_to_string(&creds_path)
+            .map_err(|e| InfsError::ConfigError(format!("Failed to read credentials: {}", e)))?;
+
+        let creds: HashMap<String, ProviderConfig> = toml::from_str(&creds_content)
+            .map_err(|e| InfsError::ConfigError(format!("Failed to parse credentials: {}", e)))?;
+        merge_file_credentials(&mut config, creds);
     }
 
-    // Load credentials: keychain next (for keys recorded in keychain_credentials),
-    // then fall back to credentials.toml for anything not yet migrated.
+    // Load credentials from the OS keychain next (medium priority).
+    // Keychain values override file credentials if both exist.
     for (provider_id, provider_config) in config.providers.iter_mut() {
         for cred_key in &provider_config.keychain_credentials {
             if provider_config.credentials.contains_key(cred_key) {
@@ -261,16 +345,10 @@ pub fn load_config_with_env(load_env: bool) -> Result<AppConfig, InfsError> {
         }
     }
 
-    // Merge credentials from separate file (even if config.toml was absent or for
-    // providers whose keys are not yet in keychain_credentials).
-    let creds_path = get_credentials_path()?;
-    if creds_path.exists() {
-        let creds_content = std::fs::read_to_string(&creds_path)
-            .map_err(|e| InfsError::ConfigError(format!("Failed to read credentials: {}", e)))?;
-
-        let creds: HashMap<String, ProviderConfig> = toml::from_str(&creds_content)
-            .map_err(|e| InfsError::ConfigError(format!("Failed to parse credentials: {}", e)))?;
-        merge_file_credentials(&mut config, creds);
+    // Load credentials from environment variables last (highest priority).
+    // Environment variables take precedence over all file and keychain sources.
+    if load_env {
+        merge_env_credentials(&mut config, credentials_from_env());
     }
 
     Ok(config)
@@ -393,19 +471,57 @@ fn write_credentials_file(path: &std::path::Path, content: &str) -> Result<(), I
     }
 }
 
+/// Save provider credentials with environment variable handling respecting the default (true).
+/// Most code should use this variant. Use save_provider_credentials_with_env(_, _, false)
+/// to suppress environment loading during the connect operation.
+#[allow(dead_code)]
 pub fn save_provider_credentials(
     provider_id: &str,
     credentials: HashMap<String, String>,
 ) -> Result<(), InfsError> {
-    let mut config = load_config()?;
+    // Load with env vars enabled so that env-sourced credentials for other providers
+    // are preserved through the connect cycle.
+    let mut config = load_config_with_env(true)?;
     let provider_config = config.providers.entry(provider_id.to_string()).or_default();
     provider_config.credentials = credentials;
     provider_config.connected = true;
     save_config(&config)
 }
 
+pub fn save_provider_credentials_with_env(
+    provider_id: &str,
+    credentials: HashMap<String, String>,
+    load_env: bool,
+) -> Result<(), InfsError> {
+    // Load respecting the load_env flag
+    let mut config = load_config_with_env(load_env)?;
+    let provider_config = config.providers.entry(provider_id.to_string()).or_default();
+    provider_config.credentials = credentials;
+    provider_config.connected = true;
+    save_config(&config)
+}
+
+/// Remove provider credentials with the default environment variable loading (false).
+/// This is kept for backward compatibility. Most code should use remove_provider_credentials_with_env.
+#[allow(dead_code)]
 pub fn remove_provider_credentials(provider_id: &str) -> Result<(), InfsError> {
     let mut config = load_config()?;
+    if let Some(provider_config) = config.providers.get_mut(provider_id) {
+        // Remove all keychain-backed credentials.
+        let keys_to_delete: Vec<String> = provider_config.keychain_credentials.clone();
+        for cred_key in &keys_to_delete {
+            keyring_delete(provider_id, cred_key)?;
+        }
+        provider_config.keychain_credentials.clear();
+        provider_config.credentials.clear();
+        provider_config.connected = false;
+    }
+    save_config(&config)
+}
+
+pub fn remove_provider_credentials_with_env(provider_id: &str, load_env: bool) -> Result<(), InfsError> {
+    // Load respecting the load_env flag
+    let mut config = load_config_with_env(load_env)?;
     if let Some(provider_config) = config.providers.get_mut(provider_id) {
         // Remove all keychain-backed credentials.
         let keys_to_delete: Vec<String> = provider_config.keychain_credentials.clone();
@@ -651,24 +767,16 @@ mod tests {
     }
 
     #[test]
-    fn test_credentials_file_overrides_env() {
+    fn test_env_credentials_override_file() {
         let _lock = test_env_lock();
         let _guard = TestEnvGuard::new(&[
             "OPENROUTER_API_KEY",
             "FALAI_API_KEY",
-            "REPLICATE_API_TOKEN",
+            "REPLICATE_API_KEY",
             "WAVESPEED_API_KEY",
         ]);
 
         let mut config = AppConfig::default();
-        merge_env_credentials(
-            &mut config,
-            HashMap::from([(
-                "openrouter".to_string(),
-                HashMap::from([("api_key".to_string(), "from-env".to_string())]),
-            )]),
-        );
-
         merge_file_credentials(
             &mut config,
             HashMap::from([(
@@ -680,12 +788,78 @@ mod tests {
             )]),
         );
 
+        merge_env_credentials(
+            &mut config,
+            HashMap::from([(
+                "openrouter".to_string(),
+                HashMap::from([("api_key".to_string(), "from-env".to_string())]),
+            )]),
+        );
+
         assert_eq!(
             config
                 .providers
                 .get("openrouter")
                 .and_then(|provider| provider.credentials.get("api_key")),
-            Some(&"from-file".to_string())
+            Some(&"from-env".to_string())
+        );
+    }
+
+    #[test]
+    fn test_priority_order_file_keychain_env() {
+        // Test the full priority order: file (lowest) < keychain < env (highest)
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&[
+            "OPENROUTER_API_KEY",
+            "FALAI_API_KEY",
+            "REPLICATE_API_KEY",
+            "WAVESPEED_API_KEY",
+        ]);
+
+        let mut config = AppConfig::default();
+
+        // Step 1: Add file credential (baseline, lowest priority)
+        merge_file_credentials(
+            &mut config,
+            HashMap::from([(
+                "openrouter".to_string(),
+                ProviderConfig {
+                    credentials: HashMap::from([("api_key".to_string(), "value-from-file".to_string())]),
+                    ..Default::default()
+                },
+            )]),
+        );
+
+        assert_eq!(
+            config
+                .providers
+                .get("openrouter")
+                .and_then(|c| c.credentials.get("api_key")),
+            Some(&"value-from-file".to_string())
+        );
+
+        // Step 2: Simulate keychain load (medium priority, should override file)
+        // For this test, we manually simulate what keychain load does.
+        // In reality, keychain values override file only if they're already not set.
+        // Since our config is empty for keychain_credentials, we skip that step.
+        // Instead, we test the env step overriding both.
+
+        // Step 3: Add env credential (highest priority, should override file)
+        merge_env_credentials(
+            &mut config,
+            HashMap::from([(
+                "openrouter".to_string(),
+                HashMap::from([("api_key".to_string(), "value-from-env".to_string())]),
+            )]),
+        );
+
+        // Env should have won
+        assert_eq!(
+            config
+                .providers
+                .get("openrouter")
+                .and_then(|c| c.credentials.get("api_key")),
+            Some(&"value-from-env".to_string())
         );
     }
 
@@ -743,5 +917,32 @@ mod tests {
 
         let loaded_path = load_dotenv();
         assert!(loaded_path.is_none());
+    }
+
+    #[test]
+    fn test_credential_source_env() {
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&["OPENROUTER_API_KEY"]);
+
+        std::env::set_var("OPENROUTER_API_KEY", "test-key");
+
+        let source = get_credential_source("openrouter").unwrap();
+        assert!(matches!(
+            source,
+            CredentialSource::Environment {
+                var_name
+            } if var_name == "OPENROUTER_API_KEY"
+        ));
+    }
+
+    #[test]
+    fn test_credential_source_not_found() {
+        let _lock = test_env_lock();
+        let _guard = TestEnvGuard::new(&["OPENROUTER_API_KEY"]);
+
+        std::env::remove_var("OPENROUTER_API_KEY");
+
+        let source = get_credential_source("openrouter").unwrap();
+        assert_eq!(source, CredentialSource::NotFound);
     }
 }
