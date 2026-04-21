@@ -41,7 +41,7 @@ pub async fn handle(load_env: bool) -> Result<()> {
         };
 
         println!("  {} {} ({})", icon, d.display_name, d.id);
-        
+
         if status == ProviderConnectionStatus::Connected {
             // Show where the credential is located
             match config::get_credential_source(&d.id) {

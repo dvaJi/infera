@@ -64,7 +64,7 @@ pub fn get_credentials_path() -> Result<PathBuf, InfsError> {
 
 /// Load .env files from the current directory and up to MAX_ENV_PARENT_DEPTH parent directories.
 /// Returns the path of the .env file that was loaded, if any.
-/// 
+///
 /// Uses `from_path_override` so .env values override existing environment variables,
 /// ensuring .env is the highest priority source.
 pub fn load_dotenv() -> Option<PathBuf> {
@@ -255,9 +255,7 @@ pub fn get_credential_source(provider_id: &str) -> Result<CredentialSource, Infs
             let env_var = format!("{}_{}", prefix, cred_key.to_uppercase());
             if let Ok(value) = std::env::var(&env_var) {
                 if !value.is_empty() {
-                    return Ok(CredentialSource::Environment {
-                        var_name: env_var,
-                    });
+                    return Ok(CredentialSource::Environment { var_name: env_var });
                 }
             }
         }
@@ -519,7 +517,10 @@ pub fn remove_provider_credentials(provider_id: &str) -> Result<(), InfsError> {
     save_config(&config)
 }
 
-pub fn remove_provider_credentials_with_env(provider_id: &str, load_env: bool) -> Result<(), InfsError> {
+pub fn remove_provider_credentials_with_env(
+    provider_id: &str,
+    load_env: bool,
+) -> Result<(), InfsError> {
     // Load respecting the load_env flag
     let mut config = load_config_with_env(load_env)?;
     if let Some(provider_config) = config.providers.get_mut(provider_id) {
@@ -824,7 +825,10 @@ mod tests {
             HashMap::from([(
                 "openrouter".to_string(),
                 ProviderConfig {
-                    credentials: HashMap::from([("api_key".to_string(), "value-from-file".to_string())]),
+                    credentials: HashMap::from([(
+                        "api_key".to_string(),
+                        "value-from-file".to_string(),
+                    )]),
                     ..Default::default()
                 },
             )]),

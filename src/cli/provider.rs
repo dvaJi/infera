@@ -36,7 +36,9 @@ pub async fn handle(cmd: ProviderCommands, json: bool, load_env: bool) -> Result
     match cmd.command {
         ProviderSubcommands::List => list_providers(json, load_env).await,
         ProviderSubcommands::Connect { provider } => connect_provider(&provider, load_env).await,
-        ProviderSubcommands::Disconnect { provider } => disconnect_provider(&provider, load_env).await,
+        ProviderSubcommands::Disconnect { provider } => {
+            disconnect_provider(&provider, load_env).await
+        }
         ProviderSubcommands::Show { provider } => show_provider(&provider, json, load_env).await,
     }
 }
