@@ -246,11 +246,18 @@ impl CredentialSource {
     }
 }
 
-/// Determine where a provider's API key credential is stored.
+/// Determine where a provider's credential is stored.
 /// Returns the source in order of precedence that was actually found.
 pub fn get_credential_source(provider_id: &str) -> Result<CredentialSource, InfsError> {
+    // Find the credential key for this provider
+    let cred_key = PROVIDER_ENV_PATTERNS
+        .iter()
+        .find(|(prov_id, _, _)| *prov_id == provider_id)
+        .map(|(_, _, cred_key)| *cred_key)
+        .unwrap_or("api_key"); // Default to "api_key" for unknown providers
+
     // Check environment variables first (highest priority)
-    for (prov_id, prefix, cred_key) in PROVIDER_ENV_PATTERNS {
+    for (prov_id, prefix, _) in PROVIDER_ENV_PATTERNS {
         if *prov_id == provider_id {
             let env_var = format!("{}_{}", prefix, cred_key.to_uppercase());
             if let Ok(value) = std::env::var(&env_var) {
@@ -262,7 +269,7 @@ pub fn get_credential_source(provider_id: &str) -> Result<CredentialSource, Infs
     }
 
     // Check OS keychain next (medium priority)
-    if keyring_get(provider_id, "api_key")?.is_some() {
+    if keyring_get(provider_id, cred_key)?.is_some() {
         return Ok(CredentialSource::Keychain);
     }
 
@@ -276,7 +283,7 @@ pub fn get_credential_source(provider_id: &str) -> Result<CredentialSource, Infs
             .map_err(|e| InfsError::ConfigError(format!("Failed to parse credentials: {}", e)))?;
 
         if let Some(prov_config) = creds.get(provider_id) {
-            if prov_config.credentials.contains_key("api_key") {
+            if prov_config.credentials.contains_key(cred_key) {
                 return Ok(CredentialSource::File);
             }
         }
@@ -712,13 +719,13 @@ mod tests {
         let _guard = TestEnvGuard::new(&[
             "OPENROUTER_API_KEY",
             "FALAI_API_KEY",
-            "REPLICATE_API_TOKEN",
+            "REPLICATE_API_KEY",
             "WAVESPEED_API_KEY",
         ]);
 
         std::env::remove_var("OPENROUTER_API_KEY");
         std::env::remove_var("FALAI_API_KEY");
-        std::env::remove_var("REPLICATE_API_TOKEN");
+        std::env::remove_var("REPLICATE_API_KEY");
         std::env::remove_var("WAVESPEED_API_KEY");
 
         let creds = credentials_from_env();
@@ -731,7 +738,7 @@ mod tests {
         let _guard = TestEnvGuard::new(&[
             "OPENROUTER_API_KEY",
             "FALAI_API_KEY",
-            "REPLICATE_API_TOKEN",
+            "REPLICATE_API_KEY",
             "WAVESPEED_API_KEY",
         ]);
 
@@ -755,7 +762,7 @@ mod tests {
         let _guard = TestEnvGuard::new(&[
             "OPENROUTER_API_KEY",
             "FALAI_API_KEY",
-            "REPLICATE_API_TOKEN",
+            "REPLICATE_API_KEY",
             "WAVESPEED_API_KEY",
         ]);
 

@@ -44,13 +44,8 @@ pub async fn handle(load_env: bool) -> Result<()> {
 
         if status == ProviderConnectionStatus::Connected {
             // Show where the credential is located
-            match config::get_credential_source(&d.id) {
-                Ok(source) => {
-                    println!("    Key location: {}", source.display());
-                }
-                Err(_) => {
-                    // Silently ignore errors in credential source detection
-                }
+            if let Ok(source) = config::get_credential_source(&d.id) {
+                println!("    Key location: {}", source.display());
             }
         } else {
             println!("    → Run: infs provider connect {}", d.id);
