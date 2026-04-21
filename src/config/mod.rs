@@ -496,8 +496,25 @@ pub fn save_provider_credentials_with_env(
     credentials: HashMap<String, String>,
     load_env: bool,
 ) -> Result<(), InfsError> {
-    // Load respecting the load_env flag
-    let mut config = load_config_with_env(load_env)?;
+    // Load without env first to get the baseline (on-disk credentials)
+    let mut config = load_config_with_env(false)?;
+
+    // If load_env is true, merge env credentials ONLY for the target provider.
+    // This prevents other providers' env vars from being persisted to disk.
+    if load_env {
+        let env_creds = credentials_from_env();
+        if let Some(provider_env_creds) = env_creds.get(provider_id) {
+            let provider_config = config.providers.entry(provider_id.to_string()).or_default();
+            // Merge env credentials for this provider (env should override file)
+            for (key, value) in provider_env_creds {
+                provider_config
+                    .credentials
+                    .insert(key.clone(), value.clone());
+            }
+        }
+    }
+
+    // Now set the credentials passed by the user (highest priority)
     let provider_config = config.providers.entry(provider_id.to_string()).or_default();
     provider_config.credentials = credentials;
     provider_config.connected = true;
@@ -526,8 +543,25 @@ pub fn remove_provider_credentials_with_env(
     provider_id: &str,
     load_env: bool,
 ) -> Result<(), InfsError> {
-    // Load respecting the load_env flag
-    let mut config = load_config_with_env(load_env)?;
+    // Load without env first to get the baseline (on-disk credentials for all providers)
+    let mut config = load_config_with_env(false)?;
+
+    // If load_env is true, merge env credentials for OTHER providers only.
+    // This preserves their env-sourced state while we disconnect the target provider.
+    if load_env {
+        let env_creds = credentials_from_env();
+        for (other_provider_id, env_creds_map) in env_creds {
+            // Skip the target provider - we're disconnecting it
+            if other_provider_id == provider_id {
+                continue;
+            }
+            let provider_config = config.providers.entry(other_provider_id).or_default();
+            for (key, value) in env_creds_map {
+                provider_config.credentials.entry(key).or_insert(value);
+            }
+        }
+    }
+
     if let Some(provider_config) = config.providers.get_mut(provider_id) {
         // Remove all keychain-backed credentials.
         let keys_to_delete: Vec<String> = provider_config.keychain_credentials.clone();
