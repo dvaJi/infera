@@ -2,7 +2,7 @@ use super::Provider;
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::types::{
-    AppCategory, AppDescriptor, AuthMethod, ListOptions, ProviderDescriptor, RunOutput, RunResponse,
+    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse,
 };
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -149,11 +149,7 @@ impl Provider for FalAiProvider {
 
     /// Fetches models live from https://api.fal.ai/v1/models when an API key is configured.
     /// Falls back to a static list of well-known models when not connected.
-    async fn list_apps(
-        &self,
-        config: &ProviderConfig,
-        options: &ListOptions,
-    ) -> Result<Vec<AppDescriptor>, InfsError> {
+    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError> {
         let api_key = match config.get_api_key() {
             Some(k) => k.to_string(),
             None => {
@@ -161,8 +157,7 @@ impl Provider for FalAiProvider {
                 eprintln!(
                     "fal.ai: showing cached models. Connect with `infs provider connect falai` to see the full live catalog."
                 );
-                let all_apps = self.static_apps();
-                return Ok(apply_client_pagination(all_apps, options));
+                return Ok(self.static_apps());
             }
         };
 
@@ -206,7 +201,7 @@ impl Provider for FalAiProvider {
             })
             .collect();
 
-        Ok(apply_client_pagination(apps, options))
+        Ok(apps)
     }
 
     async fn run_app(
@@ -520,12 +515,4 @@ mod tests {
             .insert("api_key".to_string(), "test-key".to_string());
         assert!(provider.validate_config(&config).is_ok());
     }
-}
-
-fn apply_client_pagination(apps: Vec<AppDescriptor>, options: &ListOptions) -> Vec<AppDescriptor> {
-    let offset = options.offset();
-    apps.into_iter()
-        .skip(offset)
-        .take(options.per_page)
-        .collect()
 }

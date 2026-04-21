@@ -2,7 +2,7 @@ use super::Provider;
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::types::{
-    AppCategory, AppDescriptor, AuthMethod, ListOptions, ProviderDescriptor, RunOutput, RunResponse,
+    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse,
 };
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -124,11 +124,7 @@ impl Provider for WavespeedProvider {
 
     /// Fetches models live from https://api.wavespeed.ai/api/v3/models when an API key is configured.
     /// Falls back to a static list of well-known models when not connected.
-    async fn list_apps(
-        &self,
-        config: &ProviderConfig,
-        options: &ListOptions,
-    ) -> Result<Vec<AppDescriptor>, InfsError> {
+    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError> {
         let api_key = match config.get_api_key() {
             Some(k) => k.to_string(),
             None => {
@@ -136,8 +132,7 @@ impl Provider for WavespeedProvider {
                 eprintln!(
                     "WaveSpeed AI: showing cached models. Connect with `infs provider connect wavespeed` to see the full live catalog."
                 );
-                let all_apps = self.static_apps();
-                return Ok(apply_client_pagination(all_apps, options));
+                return Ok(self.static_apps());
             }
         };
 
@@ -157,8 +152,7 @@ impl Provider for WavespeedProvider {
                 "WaveSpeed AI: could not fetch live models (HTTP {}). Showing cached models.",
                 status
             );
-            let all_apps = self.static_apps();
-            return Ok(apply_client_pagination(all_apps, options));
+            return Ok(self.static_apps());
         }
 
         let models_response: WavespeedModelsResponse = response.json().await?;
@@ -195,7 +189,7 @@ impl Provider for WavespeedProvider {
             })
             .collect();
 
-        Ok(apply_client_pagination(apps, options))
+        Ok(apps)
     }
 
     async fn run_app(
@@ -417,12 +411,4 @@ mod tests {
         let resp: WavespeedSubmitResponse = serde_json::from_str(json).unwrap();
         assert_eq!(resp.data.id, "task-abc-123");
     }
-}
-
-fn apply_client_pagination(apps: Vec<AppDescriptor>, options: &ListOptions) -> Vec<AppDescriptor> {
-    let offset = options.offset();
-    apps.into_iter()
-        .skip(offset)
-        .take(options.per_page)
-        .collect()
 }
