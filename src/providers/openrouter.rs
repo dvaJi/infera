@@ -97,7 +97,7 @@ struct OpenRouterModelsResponse {
 #[derive(Serialize, Deserialize, Clone)]
 struct ChatMessage {
     role: String,
-    content: String,
+    content: serde_json::Value,
 }
 
 #[derive(Serialize)]
@@ -136,7 +136,7 @@ fn build_messages(input: &serde_json::Value) -> Result<Vec<ChatMessage>, InfsErr
     if let Some(prompt) = input.get("prompt").and_then(|v| v.as_str()) {
         Ok(vec![ChatMessage {
             role: "user".to_string(),
-            content: prompt.to_string(),
+            content: serde_json::Value::String(prompt.to_string()),
         }])
     } else if let Some(messages_val) = input.get("messages") {
         Ok(serde_json::from_value(messages_val.clone())?)
@@ -407,7 +407,7 @@ mod tests {
         let messages = build_messages(&json!({"prompt": "Hello, world!"})).unwrap();
         assert_eq!(messages.len(), 1);
         assert_eq!(messages[0].role, "user");
-        assert_eq!(messages[0].content, "Hello, world!");
+        assert_eq!(messages[0].content.as_str().unwrap(), "Hello, world!");
     }
 
     #[test]

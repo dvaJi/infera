@@ -47,7 +47,7 @@ pub enum AppSubcommands {
             long,
             short,
             required_unless_present_any = ["input_file", "file"],
-            conflicts_with_all = ["input_file"]
+            conflicts_with_all = ["input_file", "file"]
         )]
         input: Option<String>,
         /// Read input JSON from a file instead of --input
