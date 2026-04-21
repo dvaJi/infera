@@ -3,8 +3,7 @@ use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::retry::with_retry;
 use crate::types::{
-    AppCategory, AppDescriptor, AuthMethod, ListOptions, ProviderDescriptor, RunOutput,
-    RunResponse, UsageInfo,
+    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse, UsageInfo,
 };
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -98,7 +97,7 @@ struct OpenRouterModelsResponse {
 #[derive(Serialize, Deserialize, Clone)]
 struct ChatMessage {
     role: String,
-    content: String,
+    content: serde_json::Value,
 }
 
 #[derive(Serialize)]
@@ -137,7 +136,7 @@ fn build_messages(input: &serde_json::Value) -> Result<Vec<ChatMessage>, InfsErr
     if let Some(prompt) = input.get("prompt").and_then(|v| v.as_str()) {
         Ok(vec![ChatMessage {
             role: "user".to_string(),
-            content: prompt.to_string(),
+            content: serde_json::Value::String(prompt.to_string()),
         }])
     } else if let Some(messages_val) = input.get("messages") {
         Ok(serde_json::from_value(messages_val.clone())?)
@@ -158,11 +157,7 @@ impl Provider for OpenRouterProvider {
         vec![AuthMethod::ApiKey]
     }
 
-    async fn list_apps(
-        &self,
-        config: &ProviderConfig,
-        options: &ListOptions,
-    ) -> Result<Vec<AppDescriptor>, InfsError> {
+    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError> {
         let api_key = match config.get_api_key() {
             Some(k) => k.to_string(),
             None => {
@@ -170,8 +165,7 @@ impl Provider for OpenRouterProvider {
                 eprintln!(
                     "OpenRouter: showing cached models. Connect with `infs provider connect openrouter` to see the full live catalog."
                 );
-                let all_apps = self.static_apps();
-                return Ok(apply_client_pagination(all_apps, options));
+                return Ok(self.static_apps());
             }
         };
 
@@ -217,7 +211,6 @@ impl Provider for OpenRouterProvider {
             }
         })
         .await
-        .map(|apps| apply_client_pagination(apps, options))
         .or_else(|e| {
             // Only fall back to the static list for transient failures (network / 5xx).
             // Auth errors (401/403) and other client errors are surfaced to the caller.
@@ -226,8 +219,7 @@ impl Provider for OpenRouterProvider {
                     "openrouter: /api/v1/models failed after retries ({}), falling back to static list",
                     e
                 );
-                let all_apps = self.static_apps();
-                Ok(apply_client_pagination(all_apps, options))
+                Ok(self.static_apps())
             } else {
                 Err(e)
             }
@@ -415,7 +407,7 @@ mod tests {
         let messages = build_messages(&json!({"prompt": "Hello, world!"})).unwrap();
         assert_eq!(messages.len(), 1);
         assert_eq!(messages[0].role, "user");
-        assert_eq!(messages[0].content, "Hello, world!");
+        assert_eq!(messages[0].content.as_str().unwrap(), "Hello, world!");
     }
 
     #[test]
@@ -467,12 +459,4 @@ mod tests {
         let provider = OpenRouterProvider::new();
         assert!(provider.supports_streaming());
     }
-}
-
-fn apply_client_pagination(apps: Vec<AppDescriptor>, options: &ListOptions) -> Vec<AppDescriptor> {
-    let offset = options.offset();
-    apps.into_iter()
-        .skip(offset)
-        .take(options.per_page)
-        .collect()
 }

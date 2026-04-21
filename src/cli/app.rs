@@ -1,7 +1,7 @@
 use crate::catalog::Catalog;
 use crate::config;
 use crate::providers::registry::build_registry;
-use crate::types::{AppCategory, AppDescriptor, AppId, ListOptions};
+use crate::types::{AppCategory, AppDescriptor, AppId};
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use std::path::PathBuf;
@@ -46,8 +46,8 @@ pub enum AppSubcommands {
         #[arg(
             long,
             short,
-            required_unless_present = "input_file",
-            conflicts_with = "input_file"
+            required_unless_present_any = ["input_file", "file"],
+            conflicts_with_all = ["input_file", "file"]
         )]
         input: Option<String>,
         /// Read input JSON from a file instead of --input
@@ -130,8 +130,8 @@ async fn list_apps(
             .cloned()
             .unwrap_or_default();
 
-        let options = ListOptions::new(page, per_page);
-        let apps = provider.list_apps(&prov_config, &options).await?;
+        // Fetch full catalog from provider (no pagination in trait anymore)
+        let apps = provider.list_apps(&prov_config).await?;
         let apps = filter_apps_by_category(apps, category_filter.as_deref())?;
 
         return print_app_list(

@@ -137,25 +137,6 @@ pub struct RunRequest {
     pub input: serde_json::Value,
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct ListOptions {
-    pub page: usize,
-    pub per_page: usize,
-}
-
-impl ListOptions {
-    pub fn new(page: usize, per_page: usize) -> Self {
-        Self {
-            page: page.max(1),
-            per_page: per_page.max(1),
-        }
-    }
-
-    pub fn offset(&self) -> usize {
-        (self.page.saturating_sub(1)) * self.per_page
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
 pub enum RunOutput {

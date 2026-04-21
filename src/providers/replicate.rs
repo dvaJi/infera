@@ -2,7 +2,7 @@ use super::Provider;
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::types::{
-    AppCategory, AppDescriptor, AuthMethod, ListOptions, ProviderDescriptor, RunOutput, RunResponse,
+    AppCategory, AppDescriptor, AuthMethod, ProviderDescriptor, RunOutput, RunResponse,
 };
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -164,11 +164,7 @@ impl Provider for ReplicateProvider {
     /// Fetches models live from https://api.replicate.com/v1/models when an API key is configured.
     /// Falls back to a static list of well-known models when not connected.
     /// Uses server-side cursor-based pagination to fetch all pages.
-    async fn list_apps(
-        &self,
-        config: &ProviderConfig,
-        options: &ListOptions,
-    ) -> Result<Vec<AppDescriptor>, InfsError> {
+    async fn list_apps(&self, config: &ProviderConfig) -> Result<Vec<AppDescriptor>, InfsError> {
         let api_key = match config.get_api_key() {
             Some(k) => k.to_string(),
             None => {
@@ -176,8 +172,7 @@ impl Provider for ReplicateProvider {
                 eprintln!(
                     "Replicate: showing cached models. Connect with `infs provider connect replicate` to see the full live catalog."
                 );
-                let all_apps = self.static_apps();
-                return Ok(apply_client_pagination(all_apps, options));
+                return Ok(self.static_apps());
             }
         };
 
@@ -225,7 +220,7 @@ impl Provider for ReplicateProvider {
             })
             .collect();
 
-        Ok(apply_client_pagination(apps, options))
+        Ok(apps)
     }
 
     async fn run_app(
@@ -488,12 +483,4 @@ mod tests {
         let out = parse_replicate_output(Some(json!([1, 2, 3])));
         assert!(matches!(out, RunOutput::Json(_)));
     }
-}
-
-fn apply_client_pagination(apps: Vec<AppDescriptor>, options: &ListOptions) -> Vec<AppDescriptor> {
-    let offset = options.offset();
-    apps.into_iter()
-        .skip(offset)
-        .take(options.per_page)
-        .collect()
 }
