@@ -80,9 +80,14 @@ struct WavespeedModel {
 
 fn map_wavespeed_category(model_type: &str) -> AppCategory {
     match model_type {
-        "text-to-image" | "image-to-image" => AppCategory::Image,
-        "text-to-video" | "image-to-video" => AppCategory::Video,
-        "text-to-audio" | "text-to-speech" => AppCategory::Audio,
+        "text-to-image" | "image-to-image" | "upscaler" | "ai-remover" | "image-to-text"
+        | "portrait-transfer" => AppCategory::Image,
+        "text-to-video" | "image-to-video" | "video-to-video" | "video-extend"
+        | "motion-control" | "digital-human" | "video-dubbing" | "video-effects"
+        | "audio-to-video" => AppCategory::Video,
+        "text-to-audio" | "text-to-speech" | "audio-to-audio" | "speech-to-text" => {
+            AppCategory::Audio
+        }
         _ => AppCategory::Other,
     }
 }
@@ -365,8 +370,13 @@ mod tests {
         assert_eq!(map_wavespeed_category("image-to-image"), AppCategory::Image);
         assert_eq!(map_wavespeed_category("text-to-video"), AppCategory::Video);
         assert_eq!(map_wavespeed_category("image-to-video"), AppCategory::Video);
+        assert_eq!(map_wavespeed_category("video-to-video"), AppCategory::Video);
+        assert_eq!(map_wavespeed_category("video-extend"), AppCategory::Video);
+        assert_eq!(map_wavespeed_category("motion-control"), AppCategory::Video);
         assert_eq!(map_wavespeed_category("text-to-audio"), AppCategory::Audio);
         assert_eq!(map_wavespeed_category("text-to-speech"), AppCategory::Audio);
+        assert_eq!(map_wavespeed_category("speech-to-text"), AppCategory::Audio);
+        assert_eq!(map_wavespeed_category("upscaler"), AppCategory::Image);
         assert_eq!(map_wavespeed_category("unknown"), AppCategory::Other);
     }
 
