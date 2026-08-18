@@ -2,49 +2,39 @@
 
 ## Install the CLI
 
-Download the latest pre-built binary from [GitHub Releases](https://github.com/dvaJi/infera/releases/latest):
+Installation is intentionally not automated by this skill. Obtain `infs`
+through an approved package or software-distribution channel, or build it from
+a separately reviewed local checkout. For a source build, use a user-owned
+working directory:
 
 ```bash
-# Linux x86_64
-curl -fsSL https://github.com/dvaJi/infera/releases/latest/download/infs-linux-x86_64 -o infs
-chmod +x infs && sudo mv infs /usr/local/bin/
-
-# Linux aarch64 (ARM)
-curl -fsSL https://github.com/dvaJi/infera/releases/latest/download/infs-linux-aarch64 -o infs
-chmod +x infs && sudo mv infs /usr/local/bin/
-
-# macOS Apple Silicon
-curl -fsSL https://github.com/dvaJi/infera/releases/latest/download/infs-macos-aarch64 -o infs
-chmod +x infs && sudo mv infs /usr/local/bin/
-
-# macOS Intel
-curl -fsSL https://github.com/dvaJi/infera/releases/latest/download/infs-macos-x86_64 -o infs
-chmod +x infs && sudo mv infs /usr/local/bin/
-
-# Windows x86_64 — download infs-windows-x86_64.exe and add to PATH
-```
-
-Or install to a user-writable directory (no `sudo` required):
-
-```bash
-mkdir -p ~/.local/bin
-curl -fsSL https://github.com/dvaJi/infera/releases/latest/download/infs-linux-x86_64 \
-  -o ~/.local/bin/infs
-chmod +x ~/.local/bin/infs
-# Ensure ~/.local/bin is in your PATH
-```
-
-## Build from Source
-
-Requires Rust 1.75+.  Install via [rustup](https://rustup.rs):
-
-```bash
-git clone https://github.com/dvaJi/infera && cd infera
+cd /path/to/reviewed/infera
 cargo build --release
-# Binary: ./target/release/infs
-sudo mv target/release/infs /usr/local/bin/
-# Or: cargo install --path .
+./target/release/infs --version
 ```
+
+Verify the source, version, and any available checksums or signatures using
+your organization's software policy before running the result. Do not execute
+remote installer scripts or place an unreviewed binary in a system directory.
+
+## Credential security
+
+Use the interactive connect command so the API key is entered at a masked
+prompt:
+
+```bash
+infs provider connect <provider-id>
+```
+
+Never pass a key as a command-line argument, put it in JSON input or prompts,
+commit it to a repository, or include it in logs or agent messages. Do not
+print the credentials file or enable shell tracing while credentials are in
+the environment. For automation, inject secrets from your CI or workstation
+secret manager into the process environment and remove them from logs.
+
+The CLI can use the OS keychain, environment variables, or the protected file
+fallback. Keep `.env` files ignored by version control and use them only from
+trusted project directories. Rotate a key immediately if it is exposed.
 
 ## Connecting to Providers
 
