@@ -1026,7 +1026,7 @@ mod tests {
 
         // Directly simulate what load_config_with_env does:
         // Always override if keychain has the value
-        for (_, provider_config) in config.providers.iter_mut() {
+        for provider_config in config.providers.values_mut() {
             for cred_key in &provider_config.keychain_credentials {
                 // In a real test, we'd mock keyring_get, but here we simulate
                 // the unconditional insert behavior
