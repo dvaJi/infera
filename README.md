@@ -420,6 +420,7 @@ npx skills add dvaJi/infera
 npx skills add dvaJi/infera --skill infs-cli
 npx skills add dvaJi/infera --skill infs-llm
 npx skills add dvaJi/infera --skill infs-image
+npx skills add dvaJi/infera --skill infs-wavespeed
 ```
 
 Available skills:
@@ -429,6 +430,7 @@ Available skills:
 | `infs-cli` | Full CLI reference — providers, apps, configuration, and all commands |
 | `infs-llm` | Run LLMs (Claude, GPT-4o, Gemini, Llama, Mistral) via OpenRouter |
 | `infs-image` | Generate images via fal.ai, Replicate, or WaveSpeed AI |
+| `infs-wavespeed` | Route generic, popular, and newly listed WaveSpeed AI model requests |
 
 Works with OpenCode, Claude Code, Cursor, Codex, and [40+ other agents](https://github.com/vercel-labs/skills#supported-agents).
 

@@ -11,6 +11,7 @@ Install these skills in your agent environment to enable running LLMs, generatin
 | [`infs-cli`](./infs-cli/SKILL.md) | Full CLI wrapper — providers, apps, image & LLM runs | `npx skills add dvaJi/infera/skills@infs-cli` |
 | [`infs-llm`](./infs-llm/SKILL.md) | Run LLMs via OpenRouter (Claude, GPT-4o, Gemini, Llama, Mistral, …) | `npx skills add dvaJi/infera/skills@infs-llm` |
 | [`infs-image`](./infs-image/SKILL.md) | Generate images via fal.ai, Replicate, and WaveSpeed AI | `npx skills add dvaJi/infera/skills@infs-image` |
+| [`infs-wavespeed`](./infs-wavespeed/SKILL.md) | Choose and run popular or new WaveSpeed AI models | `npx skills add dvaJi/infera/skills@infs-wavespeed` |
 
 ## Quick Start
 
@@ -59,6 +60,13 @@ infs app run openrouter/openai/gpt-4o --file photo.jpg --prompt "What's in this 
 
 # Image editing with WaveSpeed
 infs app run wavespeed/google/nano-banana-2/edit --file input.png --prompt "Make it sepia"
+```
+
+The `infs-wavespeed` skill includes generated popular and newly listed model
+references. Refresh them from WaveSpeed's public catalog with:
+
+```bash
+python skills/infs-wavespeed/scripts/update_catalog.py
 ```
 
 ## Composing Skills in Agent Workflows
