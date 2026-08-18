@@ -1,0 +1,4 @@
+interface:
+  display_name: "WaveSpeed AI"
+  short_description: "Route tasks to WaveSpeed AI models"
+  default_prompt: "Use $infs-wavespeed to choose and run the best WaveSpeed AI model for this task."

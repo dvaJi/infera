@@ -1,0 +1,884 @@
+{
+  "popular": {
+    "source": "https://wavespeed.ai/api/models?sort=visits&page=1&page_size=48",
+    "sort": "visits",
+    "page": 1,
+    "page_size": 48,
+    "total": 992,
+    "items": [
+      {
+        "rank": 1,
+        "model_id": "bytedance/seedance-2.5/image-to-video",
+        "model_name": "bytedance/seedance-2.5/image-to-video",
+        "type": "image-to-video",
+        "description": "Seedance 2.5 (Image-to-Video) generates Hollywood-grade cinematic videos from reference images and text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on Seed's unified multimodal architecture, it preserves the input image's subject and composition while adding expressive, physically accurate motion.",
+        "base_price": 900000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/image-to-video"
+      },
+      {
+        "rank": 2,
+        "model_id": "bytedance/seedance-2.5/video-edit",
+        "model_name": "bytedance/seedance-2.5/video-edit",
+        "type": "video-to-video",
+        "description": "Seedance 2.5 (Video-Edit) edits an input video from a natural-language prompt. The reference video drives subject identity, composition, and motion while the model rewrites lighting, style, weather, environment, or specific elements as instructed. Built on ByteDance Seed's unified multimodal architecture for cinematic, motion-stable output. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1100000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/video-edit"
+      },
+      {
+        "rank": 3,
+        "model_id": "bytedance/seedance-2.5/video-edit-turbo",
+        "model_name": "bytedance/seedance-2.5/video-edit-turbo",
+        "type": "video-to-video",
+        "description": "Seedance 2.5 (Video-Edit Turbo) is the turbo tier for editing an input video from a natural-language prompt — faster, more affordable high-resolution output while preserving subject identity, composition, and motion. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1300000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/video-edit-turbo"
+      },
+      {
+        "rank": 4,
+        "model_id": "bytedance/seedance-2.5/video-extend",
+        "model_name": "bytedance/seedance-2.5/video-extend",
+        "type": "video-extend",
+        "description": "Seedance 2.5 (Video-Extend) extends an input video with a new cinematic continuation generated from its last frame and a natural-language prompt. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1100000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/video-extend"
+      },
+      {
+        "rank": 5,
+        "model_id": "bytedance/seedance-2.5/text-to-video",
+        "model_name": "bytedance/seedance-2.5/text-to-video",
+        "type": "text-to-video",
+        "description": "Seedance 2.5 (Text-to-Video) generates Hollywood-grade cinematic videos from text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on Seed's unified multimodal architecture, it leads on instruction adherence, motion quality, and visual aesthetics.",
+        "base_price": 900000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/text-to-video"
+      },
+      {
+        "rank": 6,
+        "model_id": "bytedance/seedance-2.5/image-to-video-spicy",
+        "model_name": "bytedance/seedance-2.5/image-to-video-spicy",
+        "type": "image-to-video",
+        "description": "Seedance 2.5 Spicy Image to Video is a fast AI image-to-video generation model that creates high-quality cinematic clips from images, optimized for scalable content generation with smooth animations and stable aesthetics. Ready-to-use REST inference API for animating images, social media clips, product videos, advertising creatives, visual storytelling, and professional image-to-video workflows with simple integration, no coldstarts, and affordable pricing.",
+        "base_price": 900000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/image-to-video-spicy"
+      },
+      {
+        "rank": 7,
+        "model_id": "bytedance/seedance-2.5/image-to-video-turbo",
+        "model_name": "bytedance/seedance-2.5/image-to-video-turbo",
+        "type": "image-to-video",
+        "description": "Seedance 2.5 (Image-to-Video Turbo) generates cinematic 720p/1080p videos from reference images —a faster, more affordable high-resolution tier with native audio-visual synchronization, director-level control, and exceptional motion stability.",
+        "base_price": 1000000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/image-to-video-turbo"
+      },
+      {
+        "rank": 8,
+        "model_id": "bytedance/seedance-2.5/text-to-video-turbo",
+        "model_name": "bytedance/seedance-2.5/text-to-video-turbo",
+        "type": "text-to-video",
+        "description": "Seedance 2.5 (Text-to-Video Turbo) generates cinematic 720p/1080p videos from text prompts —a faster, more affordable high-resolution tier with native audio-visual synchronization, director-level control, and exceptional motion stability.",
+        "base_price": 1000000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/text-to-video-turbo"
+      },
+      {
+        "rank": 9,
+        "model_id": "wavespeed-ai/minimax-h3/image-to-video",
+        "model_name": "wavespeed-ai/minimax-h3/image-to-video",
+        "type": "image-to-video",
+        "description": "MiniMax H3 Open Weights Image to Video animates a first-frame image, optionally with last-frame guidance, into coherent 480P / 768P videos with native stereo audio, 5-15 second duration, flexible aspect ratios, and per-second billing. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 200000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/image-to-video"
+      },
+      {
+        "rank": 10,
+        "model_id": "wavespeed-ai/minimax-h3/reference-to-video",
+        "model_name": "wavespeed-ai/minimax-h3/reference-to-video",
+        "type": "image-to-video",
+        "description": "MiniMax H3 Open Weights Reference to Video generates coherent 480P / 768P videos from prompts and multimodal references, guided by up to 9 reference images, 3 reference videos, and 3 reference audios, with native stereo audio and flexible reference-based video generation on WaveSpeedAI infrastructure. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 250000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/reference-to-video"
+      },
+      {
+        "rank": 11,
+        "model_id": "wavespeed-ai/minimax-h3/text-to-video",
+        "model_name": "wavespeed-ai/minimax-h3/text-to-video",
+        "type": "text-to-video",
+        "description": "MiniMax H3 Open Weights Text to Video generates coherent videos from text prompts, with 480P / 768P output, native stereo audio, 5-15 second duration, flexible aspect ratios, and per-second billing. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 200000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/text-to-video"
+      },
+      {
+        "rank": 12,
+        "model_id": "wavespeed-ai/minimax-h3/reference-to-video-lora",
+        "model_name": "wavespeed-ai/minimax-h3/reference-to-video-lora",
+        "type": "lora-support",
+        "description": "MiniMax H3 Open Weights Reference to Video with custom LoRA support generates coherent 480P / 768P videos from prompts and multimodal references, guided by up to 9 reference images, 3 reference videos, and 3 reference audios, with native stereo audio and flexible reference-based video generation. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 300000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/reference-to-video-lora"
+      },
+      {
+        "rank": 13,
+        "model_id": "wavespeed-ai/minimax-h3/image-to-video-lora",
+        "model_name": "wavespeed-ai/minimax-h3/image-to-video-lora",
+        "type": "lora-support",
+        "description": "MiniMax H3 Open Weights Image to Video animates a first-frame image, optionally with last-frame guidance, into coherent 480P / 768P videos with native stereo audio, 5-15 second duration, flexible aspect ratios, and per-second billing. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 250000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/image-to-video-lora"
+      },
+      {
+        "rank": 14,
+        "model_id": "wavespeed-ai/minimax-h3/text-to-video-lora",
+        "model_name": "wavespeed-ai/minimax-h3/text-to-video-lora",
+        "type": "lora-support",
+        "description": "MiniMax H3 Open Weights Text to Video with custom LoRA support generates coherent videos from text prompts, with 480P / 768P output, native stereo audio, 5-15 second duration, flexible aspect ratios, and per-second billing. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 250000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/text-to-video-lora"
+      },
+      {
+        "rank": 15,
+        "model_id": "bytedance/seedream-v5.0-pro/edit",
+        "model_name": "bytedance/seedream-v5.0-pro/edit",
+        "type": "image-to-image",
+        "description": "Seedream V5.0 Pro Edit by ByteDance edits and generates images from single-image or multi-reference inputs, supporting up to 10 reference images, aspect ratio selection, and 1K / 2K output tiers. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 45000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedream-v5.0-pro/edit"
+      },
+      {
+        "rank": 16,
+        "model_id": "bytedance/seedream-v5.0-pro",
+        "model_name": "bytedance/seedream-v5.0-pro",
+        "type": "text-to-image",
+        "description": "Seedream V5.0 Pro Text to Image by ByteDance generates high-quality images from text prompts, with aspect ratio selection, strong prompt following, and 1K / 2K output tiers for flexible image creation. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 45000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedream-v5.0-pro"
+      },
+      {
+        "rank": 17,
+        "model_id": "bytedance/seedance-2.0-mini/image-to-video",
+        "model_name": "bytedance/seedance-2.0-mini/image-to-video",
+        "type": "image-to-video",
+        "description": "Seedance 2.0 Mini Image to Video is ByteDance's faster, lower-cost image-to-video model for cinematic multi-shot videos. It turns reference images and optional text prompts into narrative sequences with AI camera control, consistent characters across scenes, 480P / 720P / 1080P / 4K output, 4-15s duration, and flexible aspect ratios. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-mini/image-to-video"
+      },
+      {
+        "rank": 18,
+        "model_id": "bytedance/seedance-2.0-mini/video-edit",
+        "model_name": "bytedance/seedance-2.0-mini/video-edit",
+        "type": "video-to-video",
+        "description": "Seedance 2.0 Mini Video Edit is ByteDance's faster, lower-cost video editing model for prompt-guided video modification. It edits existing videos with cinematic multi-shot quality, AI camera control, consistent characters, 480P / 720P / 1080P / 4K output, 4-15s duration, and flexible aspect ratios. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 750000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-mini/video-edit"
+      },
+      {
+        "rank": 19,
+        "model_id": "bytedance/seedance-2.0-mini/image-to-video-turbo",
+        "model_name": "bytedance/seedance-2.0-mini/image-to-video-turbo",
+        "type": "image-to-video",
+        "description": "Seedance 2.0 Mini Image to Video Turbo is ByteDance's faster, lower-cost image-to-video model for cinematic multi-shot videos. It turns reference images and optional text prompts into narrative sequences with AI camera control, consistent characters, 720P / 1080P output, 5-12s duration, and flexible aspect ratios. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 700000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-mini/image-to-video-turbo"
+      },
+      {
+        "rank": 20,
+        "model_id": "bytedance/seedance-2.0-mini/video-edit-turbo",
+        "model_name": "bytedance/seedance-2.0-mini/video-edit-turbo",
+        "type": "video-to-video",
+        "description": "Seedance 2.0 Mini is ByteDance's faster, lower-cost video generation model for text to video and image to video. It creates cinematic multi-shot videos with AI camera control, consistent characters across scenes, 720P / 1080P output, 5-12s duration, and flexible aspect ratios. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 950000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-mini/video-edit-turbo"
+      },
+      {
+        "rank": 21,
+        "model_id": "openai/gpt-image-2/edit",
+        "model_name": "openai/gpt-image-2/edit",
+        "type": "image-to-image",
+        "description": "OpenAI's GPT Image 2 Edit enables image editing from natural-language instructions with one or more reference images. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 70000,
+        "model_url": "https://wavespeed.ai/models/openai/gpt-image-2/edit"
+      },
+      {
+        "rank": 22,
+        "model_id": "bytedance/seedance-2.0/image-to-video",
+        "model_name": "bytedance/seedance-2.0/image-to-video",
+        "type": "image-to-video",
+        "description": "Seedance 2.0 (Image-to-Video) generates Hollywood-grade cinematic videos from reference images and text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on Seed's unified multimodal architecture, it preserves the input image's subject and composition while adding expressive, physically accurate motion.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0/image-to-video"
+      },
+      {
+        "rank": 23,
+        "model_id": "bytedance/seedance-2.0-mini/text-to-video",
+        "model_name": "bytedance/seedance-2.0-mini/text-to-video",
+        "type": "text-to-video",
+        "description": "Seedance 2.0 Mini Text to Video is ByteDance's faster, lower-cost text-to-video model for cinematic multi-shot videos. It generates narrative sequences from text prompts with AI camera control, consistent characters across scenes, 480P / 720P / 1080P / 4K output, 4-15s duration, and flexible aspect ratios. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-mini/text-to-video"
+      },
+      {
+        "rank": 24,
+        "model_id": "openai/gpt-image-2/text-to-image",
+        "model_name": "openai/gpt-image-2/text-to-image",
+        "type": "text-to-image",
+        "description": "OpenAI's GPT Image 2 Text-to-Image generates high-quality images from natural-language prompts. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 60000,
+        "model_url": "https://wavespeed.ai/models/openai/gpt-image-2/text-to-image"
+      },
+      {
+        "rank": 25,
+        "model_id": "bytedance/seedance-2.0/video-edit",
+        "model_name": "bytedance/seedance-2.0/video-edit",
+        "type": "video-to-video",
+        "description": "Seedance 2.0 (Video-Edit) edits an input video from a natural-language prompt. The reference video drives subject identity, composition, and motion while the model rewrites lighting, style, weather, environment, or specific elements as instructed. Built on ByteDance Seed's unified multimodal architecture for cinematic, motion-stable output. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 750000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0/video-edit"
+      },
+      {
+        "rank": 26,
+        "model_id": "bytedance/seedance-2.0/video-edit-turbo",
+        "model_name": "bytedance/seedance-2.0/video-edit-turbo",
+        "type": "video-to-video",
+        "description": "Seedance 2.0 (Video-Edit Turbo) is the turbo tier for editing an input video from a natural-language prompt — faster, more affordable high-resolution output while preserving subject identity, composition, and motion. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 950000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0/video-edit-turbo"
+      },
+      {
+        "rank": 27,
+        "model_id": "bytedance/seedance-2.0-fast/video-edit-turbo",
+        "model_name": "bytedance/seedance-2.0-fast/video-edit-turbo",
+        "type": "video-to-video",
+        "description": "Seedance 2.0 Fast (Video-Edit Turbo) is the fastest, cheapest turbo tier for editing an input video from a natural-language prompt — high-resolution output with optimized cost and speed. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 850000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-fast/video-edit-turbo"
+      },
+      {
+        "rank": 28,
+        "model_id": "bytedance/seedance-2.0-fast/video-edit",
+        "model_name": "bytedance/seedance-2.0-fast/video-edit",
+        "type": "video-to-video",
+        "description": "Seedance 2.0 Fast (Video-Edit) edits an input video from a natural-language prompt at a faster, cheaper tier. Built on ByteDance Seed's unified multimodal architecture, it preserves subject identity, composition, and motion while rewriting lighting, style, weather, environment, or specific elements as instructed. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 650000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-fast/video-edit"
+      },
+      {
+        "rank": 29,
+        "model_id": "bytedance/seedance-2.0/video-extend",
+        "model_name": "bytedance/seedance-2.0/video-extend",
+        "type": "video-extend",
+        "description": "Seedance 2.0 (Video-Extend) extends an input video with a new cinematic continuation generated from its last frame and a natural-language prompt. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0/video-extend"
+      },
+      {
+        "rank": 30,
+        "model_id": "bytedance/seedance-2.0-mini/video-extend",
+        "model_name": "bytedance/seedance-2.0-mini/video-extend",
+        "type": "video-extend",
+        "description": "Seedance 2.0 Mini Video Extend is ByteDance's faster, lower-cost video extension model for cinematic multi-shot continuation. It extends existing videos into seamless narrative sequences with AI camera control, consistent characters, motion continuity, 480P / 720P / 1080P / 4K output, 4-15s duration, and flexible aspect ratios. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-mini/video-extend"
+      },
+      {
+        "rank": 31,
+        "model_id": "bytedance/seedance-2.0-fast/video-extend",
+        "model_name": "bytedance/seedance-2.0-fast/video-extend",
+        "type": "video-extend",
+        "description": "Seedance 2.0 Fast (Video-Extend) extends an input video with a new cinematic continuation generated from its last frame and a natural-language prompt — at the faster, cheaper Seedance 2.0 Fast tier. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 500000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-fast/video-extend"
+      },
+      {
+        "rank": 32,
+        "model_id": "bytedance/seedance-2.0/text-to-video",
+        "model_name": "bytedance/seedance-2.0/text-to-video",
+        "type": "text-to-video",
+        "description": "Seedance 2.0 (Text-to-Video) generates Hollywood-grade cinematic videos from text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on Seed's unified multimodal architecture, it leads on instruction adherence, motion quality, and visual aesthetics.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0/text-to-video"
+      },
+      {
+        "rank": 33,
+        "model_id": "bytedance/seedance-2.0/image-to-video-spicy",
+        "model_name": "bytedance/seedance-2.0/image-to-video-spicy",
+        "type": "image-to-video",
+        "description": "Seedance 2.0 Spicy Image to Video is a fast AI image-to-video generation model that creates high-quality cinematic clips from images, optimized for scalable content generation with smooth animations and stable aesthetics. Ready-to-use REST inference API for animating images, social media clips, product videos, advertising creatives, visual storytelling, and professional image-to-video workflows with simple integration, no coldstarts, and affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0/image-to-video-spicy"
+      },
+      {
+        "rank": 34,
+        "model_id": "bytedance/seedance-2.0-mini/image-to-video-spicy",
+        "model_name": "bytedance/seedance-2.0-mini/image-to-video-spicy",
+        "type": "image-to-video",
+        "description": "Seedance 2.0 Mini Spicy Image to Video is ByteDance's faster, lower-cost image-to-video model for cinematic multi-shot videos. It turns reference images and optional text prompts into narrative sequences with AI camera control, consistent characters, 480P / 720P / 1080P / 4K output, 4-15s duration, and flexible aspect ratios. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-mini/image-to-video-spicy"
+      },
+      {
+        "rank": 35,
+        "model_id": "bytedance/seedance-2.0-fast/image-to-video",
+        "model_name": "bytedance/seedance-2.0-fast/image-to-video",
+        "type": "image-to-video",
+        "description": "Seedance 2.0 Fast (Image-to-Video) generates cinematic videos from reference images and text prompts with native audio-visual synchronization, director-level control, and exceptional motion stability — optimized for faster generation at lower cost. Built on Seed's unified multimodal architecture.",
+        "base_price": 500000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-fast/image-to-video"
+      },
+      {
+        "rank": 36,
+        "model_id": "bytedance/seedance-2.0-fast/text-to-video",
+        "model_name": "bytedance/seedance-2.0-fast/text-to-video",
+        "type": "text-to-video",
+        "description": "Seedance 2.0 Fast (Text-to-Video) generates cinematic videos from text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability — optimized for faster generation at lower cost. Built on Seed's unified multimodal architecture.",
+        "base_price": 500000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-fast/text-to-video"
+      },
+      {
+        "rank": 37,
+        "model_id": "bytedance/seedance-2.0-fast/image-to-video-spicy",
+        "model_name": "bytedance/seedance-2.0-fast/image-to-video-spicy",
+        "type": "image-to-video",
+        "description": "Seedance 2.0 Fast Spicy Image to Video is a fast AI image-to-video generation model that creates high-quality cinematic clips from images at faster speed and lower cost, optimized for scalable content generation with smooth animations and stable aesthetics. Ready-to-use REST inference API for animating images, social media clips, product videos, advertising creatives, visual storytelling, and professional image-to-video workflows with simple integration, no coldstarts, and affordable pricing.",
+        "base_price": 500000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-fast/image-to-video-spicy"
+      },
+      {
+        "rank": 38,
+        "model_id": "google/nano-banana-pro/edit",
+        "model_name": "google/nano-banana-pro/edit",
+        "type": "image-to-image",
+        "description": "Google Nano Banana Pro (Gemini 3.0 Pro Image) Edit enables image editing with 4K-capable output. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 140000,
+        "model_url": "https://wavespeed.ai/models/google/nano-banana-pro/edit"
+      },
+      {
+        "rank": 39,
+        "model_id": "google/nano-banana-2/edit",
+        "model_name": "google/nano-banana-2/edit",
+        "type": "image-to-image",
+        "description": "Google Nano Banana 2 Edit (Gemini 3.1 Flash Image) enables advanced image editing with 4K-capable output, fast iteration, and precise instruction following. Supports text translation, localization within images, and maintains subject consistency during edits. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 70000,
+        "model_url": "https://wavespeed.ai/models/google/nano-banana-2/edit"
+      },
+      {
+        "rank": 40,
+        "model_id": "bytedance/seedance-2.0/image-to-video-turbo",
+        "model_name": "bytedance/seedance-2.0/image-to-video-turbo",
+        "type": "image-to-video",
+        "description": "Seedance 2.0 (Image-to-Video Turbo) generates cinematic 720p/1080p videos from reference images —a faster, more affordable high-resolution tier with native audio-visual synchronization, director-level control, and exceptional motion stability.",
+        "base_price": 700000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0/image-to-video-turbo"
+      },
+      {
+        "rank": 41,
+        "model_id": "bytedance/seedance-2.0/text-to-video-turbo",
+        "model_name": "bytedance/seedance-2.0/text-to-video-turbo",
+        "type": "text-to-video",
+        "description": "Seedance 2.0 (Text-to-Video Turbo) generates cinematic 720p/1080p videos from text prompts —a faster, more affordable high-resolution tier with native audio-visual synchronization, director-level control, and exceptional motion stability.",
+        "base_price": 700000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0/text-to-video-turbo"
+      },
+      {
+        "rank": 42,
+        "model_id": "bytedance/seedance-2.0-mini/text-to-video-turbo",
+        "model_name": "bytedance/seedance-2.0-mini/text-to-video-turbo",
+        "type": "text-to-video",
+        "description": "Seedance 2.0 Mini Text to Video Turbo is ByteDance's faster, lower-cost text-to-video model for cinematic multi-shot videos. It generates narrative sequences from text prompts with AI camera control, consistent characters, 720P / 1080P output, 5-12s duration, and flexible aspect ratios. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 700000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-mini/text-to-video-turbo"
+      },
+      {
+        "rank": 43,
+        "model_id": "bytedance/seedance-2.0-fast/image-to-video-turbo",
+        "model_name": "bytedance/seedance-2.0-fast/image-to-video-turbo",
+        "type": "image-to-video",
+        "description": "Seedance 2.0 Fast (Image-to-Video Turbo) generates cinematic 720p/1080p videos from reference images using speed-optimized inference —the fastest and most affordable Seedance image-to-video option with native audio-visual synchronization and director-level control.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-fast/image-to-video-turbo"
+      },
+      {
+        "rank": 44,
+        "model_id": "bytedance/seedance-2.0-fast/text-to-video-turbo",
+        "model_name": "bytedance/seedance-2.0-fast/text-to-video-turbo",
+        "type": "text-to-video",
+        "description": "Seedance 2.0 Fast (Text-to-Video Turbo) generates cinematic 720p/1080p videos from text prompts using speed-optimized inference —the fastest and most affordable Seedance option with native audio-visual synchronization and director-level control.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.0-fast/text-to-video-turbo"
+      },
+      {
+        "rank": 45,
+        "model_id": "google/nano-banana-pro/text-to-image",
+        "model_name": "google/nano-banana-pro/text-to-image",
+        "type": "text-to-image",
+        "description": "Google's Nano Banana pro (Gemini 3.0 Pro Image) is a cutting-edge text-to-image model enabling high-res 4K image generation optimized for phones. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 140000,
+        "model_url": "https://wavespeed.ai/models/google/nano-banana-pro/text-to-image"
+      },
+      {
+        "rank": 46,
+        "model_id": "google/nano-banana-2/text-to-image",
+        "model_name": "google/nano-banana-2/text-to-image",
+        "type": "text-to-image",
+        "description": "Google Nano Banana 2 (Gemini 3.1 Flash Image) delivers Pro-quality image generation at Flash speed with 512px to 4K resolution support. Features include improved text rendering, character consistency for up to 5 characters, and real-world knowledge integration. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 70000,
+        "model_url": "https://wavespeed.ai/models/google/nano-banana-2/text-to-image"
+      },
+      {
+        "rank": 47,
+        "model_id": "alibaba/wan-3.0/image-to-video",
+        "model_name": "alibaba/wan-3.0/image-to-video",
+        "type": "image-to-video",
+        "description": "Wan 3.0 Image to Video animates a first-frame image into a cinematic video, with optional last-frame guidance, flexible 2-30 second duration, aspect ratio control, optional audio, and deep-thinking controls for high-quality motion and scene continuity. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/alibaba/wan-3.0/image-to-video"
+      },
+      {
+        "rank": 48,
+        "model_id": "alibaba/wan-3.0/reference-to-video",
+        "model_name": "alibaba/wan-3.0/reference-to-video",
+        "type": "image-to-video",
+        "description": "Wan 3.0 Reference to Video creates coherent videos from prompts and multimodal references, including images, videos, and audio, with flexible 2-30 second duration and aspect ratio control for subject consistency, motion guidance, timing control, and scene continuity. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/alibaba/wan-3.0/reference-to-video"
+      }
+    ]
+  },
+  "new": {
+    "source": "https://wavespeed.ai/api/models?sort=created_at&page=1&page_size=48",
+    "sort": "created_at",
+    "page": 1,
+    "page_size": 48,
+    "total": 992,
+    "items": [
+      {
+        "rank": 1,
+        "model_id": "wavespeed-ai/krea-v2/turbo-lora",
+        "model_name": "wavespeed-ai/krea-v2/turbo-lora",
+        "type": "lora-support",
+        "description": "Krea 2 Turbo with LoRA support runs custom LoRAs and generates personalized images natively at 1K to 2K resolution, with both text-to-image and image-to-image support. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+        "base_price": 18000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/krea-v2/turbo-lora"
+      },
+      {
+        "rank": 2,
+        "model_id": "wavespeed-ai/krea-v2/turbo",
+        "model_name": "wavespeed-ai/krea-v2/turbo",
+        "type": "text-to-image",
+        "description": "Krea 2 Turbo generates aesthetic-first images natively at 1K to 2K resolution in seconds, supporting both text-to-image and image-to-image. Ready-to-use REST inference API, best performance, no cold starts, affordable pricing.",
+        "base_price": 12000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/krea-v2/turbo"
+      },
+      {
+        "rank": 3,
+        "model_id": "wavespeed-ai/minimax-h3/reference-to-video-lora",
+        "model_name": "wavespeed-ai/minimax-h3/reference-to-video-lora",
+        "type": "lora-support",
+        "description": "MiniMax H3 Open Weights Reference to Video with custom LoRA support generates coherent 480P / 768P videos from prompts and multimodal references, guided by up to 9 reference images, 3 reference videos, and 3 reference audios, with native stereo audio and flexible reference-based video generation. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 300000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/reference-to-video-lora"
+      },
+      {
+        "rank": 4,
+        "model_id": "wavespeed-ai/minimax-h3/image-to-video-lora",
+        "model_name": "wavespeed-ai/minimax-h3/image-to-video-lora",
+        "type": "lora-support",
+        "description": "MiniMax H3 Open Weights Image to Video animates a first-frame image, optionally with last-frame guidance, into coherent 480P / 768P videos with native stereo audio, 5-15 second duration, flexible aspect ratios, and per-second billing. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 250000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/image-to-video-lora"
+      },
+      {
+        "rank": 5,
+        "model_id": "wavespeed-ai/minimax-h3/text-to-video-lora",
+        "model_name": "wavespeed-ai/minimax-h3/text-to-video-lora",
+        "type": "lora-support",
+        "description": "MiniMax H3 Open Weights Text to Video with custom LoRA support generates coherent videos from text prompts, with 480P / 768P output, native stereo audio, 5-15 second duration, flexible aspect ratios, and per-second billing. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 250000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/text-to-video-lora"
+      },
+      {
+        "rank": 6,
+        "model_id": "x-ai/grok-imagine-image-v2.0/edit",
+        "model_name": "x-ai/grok-imagine-image-v2.0/edit",
+        "type": "image-to-image",
+        "description": "xAI Grok Imagine Image V2.0 Edit transforms input images with text prompts, with configurable resolution and quality for precise image editing, visual refinements, creative variations, social content, marketing assets, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 60000,
+        "model_url": "https://wavespeed.ai/models/x-ai/grok-imagine-image-v2.0/edit"
+      },
+      {
+        "rank": 7,
+        "model_id": "x-ai/grok-imagine-image-v2.0/text-to-image",
+        "model_name": "x-ai/grok-imagine-image-v2.0/text-to-image",
+        "type": "text-to-image",
+        "description": "xAI Grok Imagine Image V2.0 Text-to-Image generates high-quality images from text prompts, with configurable aspect ratio, resolution, and quality for creative visuals, social content, marketing assets, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 50000,
+        "model_url": "https://wavespeed.ai/models/x-ai/grok-imagine-image-v2.0/text-to-image"
+      },
+      {
+        "rank": 8,
+        "model_id": "minimax/music-3.0",
+        "model_name": "minimax/music-3.0",
+        "type": "text-to-audio",
+        "description": "MiniMax Music 3.0 generates complete songs from text prompts and lyrics, including vocals and instrumentals, with instrumental-only mode, auto lyrics generation, structure tags for song arrangement, and configurable audio quality. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 150000,
+        "model_url": "https://wavespeed.ai/models/minimax/music-3.0"
+      },
+      {
+        "rank": 9,
+        "model_id": "wavespeed-ai/ltx-2.5/text-to-video",
+        "model_name": "wavespeed-ai/ltx-2.5/text-to-video",
+        "type": "text-to-video",
+        "description": "LTX 2.5 Text-to-Video generates high-fidelity synchronized audio-video content from text prompts, with flexible duration and 720P / 1080P / 2K / 4K output for cinematic videos, social content, ads, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 500000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/ltx-2.5/text-to-video"
+      },
+      {
+        "rank": 10,
+        "model_id": "wavespeed-ai/ltx-2.5/image-to-video",
+        "model_name": "wavespeed-ai/ltx-2.5/image-to-video",
+        "type": "image-to-video",
+        "description": "LTX 2.5 Image-to-Video animates a first-frame image into high-fidelity synchronized audio-video content, with optional last-frame guidance and 720P / 1080P / 2K / 4K output for cinematic videos, social content, ads, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 500000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/ltx-2.5/image-to-video"
+      },
+      {
+        "rank": 11,
+        "model_id": "bytedance/seedream-v5.0-pro/layer-decomposition",
+        "model_name": "bytedance/seedream-v5.0-pro/layer-decomposition",
+        "type": "image-to-image",
+        "description": "Seedream V5.0 Pro Layer Decomposition separates a single image into a base image and transparent layers, enabling flexible compositing, image editing, asset extraction, and layered design workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 750000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedream-v5.0-pro/layer-decomposition"
+      },
+      {
+        "rank": 12,
+        "model_id": "meshy/v7/multi-image-to-3d",
+        "model_name": "meshy/v7/multi-image-to-3d",
+        "type": "image-to-3d",
+        "description": "Meshy V7 Multi-Image-to-3D reconstructs textured, PBR-ready 3D models from one to four views of the same object, with configurable topology, rigging, and animation options for game assets, product visualization, 3D design, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1320000,
+        "model_url": "https://wavespeed.ai/models/meshy/v7/multi-image-to-3d"
+      },
+      {
+        "rank": 13,
+        "model_id": "meshy/v7/image-to-3d",
+        "model_name": "meshy/v7/image-to-3d",
+        "type": "image-to-3d",
+        "description": "Meshy V7 Image-to-3D turns a single reference image into a textured, PBR-ready 3D model with configurable topology, rigging, and animation for game assets, product visualization, 3D design, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1320000,
+        "model_url": "https://wavespeed.ai/models/meshy/v7/image-to-3d"
+      },
+      {
+        "rank": 14,
+        "model_id": "wavespeed-ai/wan-2.2/animate-2",
+        "model_name": "wavespeed-ai/wan-2.2/animate-2",
+        "type": "motion-control",
+        "description": "Wan 2.2 Animate 2 is the next-generation Wan character animation model: an end-to-end DiT that makes the character in a reference image perform the motion of a driving video, with no pose extraction, prompt-controlled background, and strong identity preservation; generates 480p/720p videos up to 120s. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 200000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/wan-2.2/animate-2"
+      },
+      {
+        "rank": 15,
+        "model_id": "bytedance/seedance-2.5/video-edit-turbo",
+        "model_name": "bytedance/seedance-2.5/video-edit-turbo",
+        "type": "video-to-video",
+        "description": "Seedance 2.5 (Video-Edit Turbo) is the turbo tier for editing an input video from a natural-language prompt — faster, more affordable high-resolution output while preserving subject identity, composition, and motion. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1300000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/video-edit-turbo"
+      },
+      {
+        "rank": 16,
+        "model_id": "bytedance/seedance-2.5/image-to-video-turbo",
+        "model_name": "bytedance/seedance-2.5/image-to-video-turbo",
+        "type": "image-to-video",
+        "description": "Seedance 2.5 (Image-to-Video Turbo) generates cinematic 720p/1080p videos from reference images —a faster, more affordable high-resolution tier with native audio-visual synchronization, director-level control, and exceptional motion stability.",
+        "base_price": 1000000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/image-to-video-turbo"
+      },
+      {
+        "rank": 17,
+        "model_id": "bytedance/seedance-2.5/text-to-video-turbo",
+        "model_name": "bytedance/seedance-2.5/text-to-video-turbo",
+        "type": "text-to-video",
+        "description": "Seedance 2.5 (Text-to-Video Turbo) generates cinematic 720p/1080p videos from text prompts —a faster, more affordable high-resolution tier with native audio-visual synchronization, director-level control, and exceptional motion stability.",
+        "base_price": 1000000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/text-to-video-turbo"
+      },
+      {
+        "rank": 18,
+        "model_id": "bytedance/seedance-2.5/video-edit",
+        "model_name": "bytedance/seedance-2.5/video-edit",
+        "type": "video-to-video",
+        "description": "Seedance 2.5 (Video-Edit) edits an input video from a natural-language prompt. The reference video drives subject identity, composition, and motion while the model rewrites lighting, style, weather, environment, or specific elements as instructed. Built on ByteDance Seed's unified multimodal architecture for cinematic, motion-stable output. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1100000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/video-edit"
+      },
+      {
+        "rank": 19,
+        "model_id": "bytedance/seedance-2.5/image-to-video-spicy",
+        "model_name": "bytedance/seedance-2.5/image-to-video-spicy",
+        "type": "image-to-video",
+        "description": "Seedance 2.5 Spicy Image to Video is a fast AI image-to-video generation model that creates high-quality cinematic clips from images, optimized for scalable content generation with smooth animations and stable aesthetics. Ready-to-use REST inference API for animating images, social media clips, product videos, advertising creatives, visual storytelling, and professional image-to-video workflows with simple integration, no coldstarts, and affordable pricing.",
+        "base_price": 900000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/image-to-video-spicy"
+      },
+      {
+        "rank": 20,
+        "model_id": "bytedance/seedance-2.5/video-extend",
+        "model_name": "bytedance/seedance-2.5/video-extend",
+        "type": "video-extend",
+        "description": "Seedance 2.5 (Video-Extend) extends an input video with a new cinematic continuation generated from its last frame and a natural-language prompt. Ready-to-use REST API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1100000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/video-extend"
+      },
+      {
+        "rank": 21,
+        "model_id": "bytedance/seedance-2.5/text-to-video",
+        "model_name": "bytedance/seedance-2.5/text-to-video",
+        "type": "text-to-video",
+        "description": "Seedance 2.5 (Text-to-Video) generates Hollywood-grade cinematic videos from text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on Seed's unified multimodal architecture, it leads on instruction adherence, motion quality, and visual aesthetics.",
+        "base_price": 900000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/text-to-video"
+      },
+      {
+        "rank": 22,
+        "model_id": "bytedance/seedance-2.5/image-to-video",
+        "model_name": "bytedance/seedance-2.5/image-to-video",
+        "type": "image-to-video",
+        "description": "Seedance 2.5 (Image-to-Video) generates Hollywood-grade cinematic videos from reference images and text prompts with native audio-visual synchronization, director-level camera and lighting control, and exceptional motion stability. Built on Seed's unified multimodal architecture, it preserves the input image's subject and composition while adding expressive, physically accurate motion.",
+        "base_price": 900000,
+        "model_url": "https://wavespeed.ai/models/bytedance/seedance-2.5/image-to-video"
+      },
+      {
+        "rank": 23,
+        "model_id": "black-forest-labs/flux-3/video-extend-draft",
+        "model_name": "black-forest-labs/flux-3/video-extend-draft",
+        "type": "video-extend",
+        "description": "FLUX 3 Video Extend Draft quickly continues a required input video into a draft clip with prompt-guided next-scene motion, optional synchronized audio, and flexible 5-20 second duration for rapid iteration.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/black-forest-labs/flux-3/video-extend-draft"
+      },
+      {
+        "rank": 24,
+        "model_id": "black-forest-labs/flux-3/start-end-to-video",
+        "model_name": "black-forest-labs/flux-3/start-end-to-video",
+        "type": "image-to-video",
+        "description": "FLUX 3 Start-End-to-Video generates 5-20 second transition videos between required start and end images, using prompt guidance to control action, camera movement, visual style, motion continuity, and optional synchronized audio at 720P / 1080P output. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 850000,
+        "model_url": "https://wavespeed.ai/models/black-forest-labs/flux-3/start-end-to-video"
+      },
+      {
+        "rank": 25,
+        "model_id": "black-forest-labs/flux-3/image-to-video",
+        "model_name": "black-forest-labs/flux-3/image-to-video",
+        "type": "image-to-video",
+        "description": "FLUX 3 Image-to-Video animates a required reference image into a 5-20 second video, preserving subject appearance while using prompt control to guide motion, camera movement, visual style, and optional synchronized audio at 720P / 1080P output. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 850000,
+        "model_url": "https://wavespeed.ai/models/black-forest-labs/flux-3/image-to-video"
+      },
+      {
+        "rank": 26,
+        "model_id": "black-forest-labs/flux-3/video-extend",
+        "model_name": "black-forest-labs/flux-3/video-extend",
+        "type": "video-extend",
+        "description": "FLUX 3 Video Extend continues input videos into new 5-20 second clips, using prompt guidance to control the next action, camera movement, visual style, motion continuity, and optional synchronized audio at 720P / 1080P output. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 2050000,
+        "model_url": "https://wavespeed.ai/models/black-forest-labs/flux-3/video-extend"
+      },
+      {
+        "rank": 27,
+        "model_id": "black-forest-labs/flux-3/text-to-video",
+        "model_name": "black-forest-labs/flux-3/text-to-video",
+        "type": "text-to-video",
+        "description": "FLUX 3 Text-to-Video generates cinematic 5-20 second videos from text prompts, with coherent motion, cinematic composition, optional synchronized audio, and 720P / 1080P output for creative videos, social content, ads, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 850000,
+        "model_url": "https://wavespeed.ai/models/black-forest-labs/flux-3/text-to-video"
+      },
+      {
+        "rank": 28,
+        "model_id": "black-forest-labs/flux-3/text-to-video-draft",
+        "model_name": "black-forest-labs/flux-3/text-to-video-draft",
+        "type": "text-to-video",
+        "description": "FLUX 3 Text-to-Video Draft generates short draft videos from text prompts with coherent motion, prompt-guided camera direction, optional synchronized audio, and pricing optimized for rapid iteration.",
+        "base_price": 300000,
+        "model_url": "https://wavespeed.ai/models/black-forest-labs/flux-3/text-to-video-draft"
+      },
+      {
+        "rank": 29,
+        "model_id": "black-forest-labs/flux-3/image-to-video-draft",
+        "model_name": "black-forest-labs/flux-3/image-to-video-draft",
+        "type": "image-to-video",
+        "description": "FLUX 3 Image-to-Video Draft quickly animates a required reference image into a draft clip with prompt-guided motion, optional synchronized audio, and flexible 5-20 second duration for rapid visual iteration.",
+        "base_price": 300000,
+        "model_url": "https://wavespeed.ai/models/black-forest-labs/flux-3/image-to-video-draft"
+      },
+      {
+        "rank": 30,
+        "model_id": "black-forest-labs/flux-3/start-end-to-video-draft",
+        "model_name": "black-forest-labs/flux-3/start-end-to-video-draft",
+        "type": "image-to-video",
+        "description": "FLUX 3 Start-End-to-Video Draft quickly generates a transition between required start and end images, with prompt-guided motion, optional synchronized audio, and flexible 5-20 second duration for rapid keyframe iteration.",
+        "base_price": 300000,
+        "model_url": "https://wavespeed.ai/models/black-forest-labs/flux-3/start-end-to-video-draft"
+      },
+      {
+        "rank": 31,
+        "model_id": "alibaba/qwen-image-3.0/text-to-image",
+        "model_name": "alibaba/qwen-image-3.0/text-to-image",
+        "type": "text-to-image",
+        "description": "Qwen Image 3.0 Text to Image is a high-quality image generation model that creates high-quality images from text prompts, with advanced prompt understanding, strong visual quality, and up to 2K output for creative and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 30000,
+        "model_url": "https://wavespeed.ai/models/alibaba/qwen-image-3.0/text-to-image"
+      },
+      {
+        "rank": 32,
+        "model_id": "alibaba/qwen-image-3.0/edit",
+        "model_name": "alibaba/qwen-image-3.0/edit",
+        "type": "image-to-image",
+        "description": "Qwen Image 3.0 Edit is a high-quality image editing model that transforms existing images with natural-language instructions, delivering advanced instruction understanding, superior visual quality, and up to 2K output for creative and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 30000,
+        "model_url": "https://wavespeed.ai/models/alibaba/qwen-image-3.0/edit"
+      },
+      {
+        "rank": 33,
+        "model_id": "runwayml/aleph-2",
+        "model_name": "runwayml/aleph-2",
+        "type": "video-to-video",
+        "description": "Runway Aleph 2 Video Edit is an in-context video editing model for precise prompt-based edits, multi-shot consistency, and optional keyframe guidance, supporting 2-30 second input videos and up to 5 keyframes for controlled video modification workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1850000,
+        "model_url": "https://wavespeed.ai/models/runwayml/aleph-2"
+      },
+      {
+        "rank": 34,
+        "model_id": "wavespeed-ai/minimax-h3/reference-to-video",
+        "model_name": "wavespeed-ai/minimax-h3/reference-to-video",
+        "type": "image-to-video",
+        "description": "MiniMax H3 Open Weights Reference to Video generates coherent 480P / 768P videos from prompts and multimodal references, guided by up to 9 reference images, 3 reference videos, and 3 reference audios, with native stereo audio and flexible reference-based video generation on WaveSpeedAI infrastructure. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 250000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/reference-to-video"
+      },
+      {
+        "rank": 35,
+        "model_id": "wavespeed-ai/minimax-h3/image-to-video",
+        "model_name": "wavespeed-ai/minimax-h3/image-to-video",
+        "type": "image-to-video",
+        "description": "MiniMax H3 Open Weights Image to Video animates a first-frame image, optionally with last-frame guidance, into coherent 480P / 768P videos with native stereo audio, 5-15 second duration, flexible aspect ratios, and per-second billing. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 200000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/image-to-video"
+      },
+      {
+        "rank": 36,
+        "model_id": "wavespeed-ai/minimax-h3/text-to-video",
+        "model_name": "wavespeed-ai/minimax-h3/text-to-video",
+        "type": "text-to-video",
+        "description": "MiniMax H3 Open Weights Text to Video generates coherent videos from text prompts, with 480P / 768P output, native stereo audio, 5-15 second duration, flexible aspect ratios, and per-second billing. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 200000,
+        "model_url": "https://wavespeed.ai/models/wavespeed-ai/minimax-h3/text-to-video"
+      },
+      {
+        "rank": 37,
+        "model_id": "x-ai/grok-imagine-video-v1.5/reference-to-video",
+        "model_name": "x-ai/grok-imagine-video-v1.5/reference-to-video",
+        "type": "image-to-video",
+        "description": "xAI Grok Imagine Video v1.5 Reference to Video turns up to seven reference images and a natural-language prompt into short, stylized AI videos, with 480P / 720P output options and selectable aspect ratios for identity-consistent clips, character-driven videos, social media content, creative storytelling, and marketing workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 90000,
+        "model_url": "https://wavespeed.ai/models/x-ai/grok-imagine-video-v1.5/reference-to-video"
+      },
+      {
+        "rank": 38,
+        "model_id": "x-ai/grok-imagine-video-v1.5/text-to-video",
+        "model_name": "x-ai/grok-imagine-video-v1.5/text-to-video",
+        "type": "text-to-video",
+        "description": "xAI Grok Imagine Video v1.5 Text to Video turns natural-language prompts into short, stylized AI videos, with 480P, 720P, and 1080P output options plus selectable aspect ratios for social media clips, creative storytelling, concept videos, marketing content, and professional text-to-video workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 80000,
+        "model_url": "https://wavespeed.ai/models/x-ai/grok-imagine-video-v1.5/text-to-video"
+      },
+      {
+        "rank": 39,
+        "model_id": "alibaba/wan-3.0/reference-to-video",
+        "model_name": "alibaba/wan-3.0/reference-to-video",
+        "type": "image-to-video",
+        "description": "Wan 3.0 Reference to Video creates coherent videos from prompts and multimodal references, including images, videos, and audio, with flexible 2-30 second duration and aspect ratio control for subject consistency, motion guidance, timing control, and scene continuity. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/alibaba/wan-3.0/reference-to-video"
+      },
+      {
+        "rank": 40,
+        "model_id": "alibaba/wan-3.0/image-to-video",
+        "model_name": "alibaba/wan-3.0/image-to-video",
+        "type": "image-to-video",
+        "description": "Wan 3.0 Image to Video animates a first-frame image into a cinematic video, with optional last-frame guidance, flexible 2-30 second duration, aspect ratio control, optional audio, and deep-thinking controls for high-quality motion and scene continuity. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/alibaba/wan-3.0/image-to-video"
+      },
+      {
+        "rank": 41,
+        "model_id": "alibaba/wan-3.0/text-to-video",
+        "model_name": "alibaba/wan-3.0/text-to-video",
+        "type": "text-to-video",
+        "description": "Wan 3.0 Text to Video generates cinematic videos from text prompts, with flexible 2-30 second duration, aspect ratio control, optional audio, and deep-thinking controls for high-quality video generation. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 600000,
+        "model_url": "https://wavespeed.ai/models/alibaba/wan-3.0/text-to-video"
+      },
+      {
+        "rank": 42,
+        "model_id": "microsoft/mai-image-2.5-pro/edit",
+        "model_name": "microsoft/mai-image-2.5-pro/edit",
+        "type": "image-to-image",
+        "description": "Microsoft MAI Image 2.5 Pro Image Edit transforms source images with natural-language instructions, applying precise edits while preserving the details that should remain unchanged for creative design, product visuals, marketing assets, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 290000,
+        "model_url": "https://wavespeed.ai/models/microsoft/mai-image-2.5-pro/edit"
+      },
+      {
+        "rank": 43,
+        "model_id": "microsoft/mai-image-2.5-pro/text-to-image",
+        "model_name": "microsoft/mai-image-2.5-pro/text-to-image",
+        "type": "text-to-image",
+        "description": "Microsoft MAI Image 2.5 Pro Text-to-Image generates polished, detailed images from natural-language prompts, with strong prompt understanding, clean composition, and high-quality visual output for creative designs, product visuals, marketing assets, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 180000,
+        "model_url": "https://wavespeed.ai/models/microsoft/mai-image-2.5-pro/text-to-image"
+      },
+      {
+        "rank": 44,
+        "model_id": "minimax/h3/reference-to-video",
+        "model_name": "minimax/h3/reference-to-video",
+        "type": "image-to-video",
+        "description": "MiniMax H3 Reference to Video generates coherent 2K videos from natural-language prompts and multimodal references, including images, videos, and audio, guiding subject consistency, motion, timing, visual style, and scene continuity. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 700000,
+        "model_url": "https://wavespeed.ai/models/minimax/h3/reference-to-video"
+      },
+      {
+        "rank": 45,
+        "model_id": "minimax/h3/image-to-video",
+        "model_name": "minimax/h3/image-to-video",
+        "type": "image-to-video",
+        "description": "MiniMax H3 Image to Video animates a first-frame image into a coherent 2K video, with natural-language motion instructions and optional last-frame control for consistent motion, scene continuity, and cinematic video generation. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 700000,
+        "model_url": "https://wavespeed.ai/models/minimax/h3/image-to-video"
+      },
+      {
+        "rank": 46,
+        "model_id": "minimax/h3/text-to-video",
+        "model_name": "minimax/h3/text-to-video",
+        "type": "text-to-video",
+        "description": "MiniMax H3 Text to Video generates coherent 2K videos from text prompts, with flexible 5-15 second duration and adaptive or custom aspect ratios for cinematic scenes, creative videos, and production workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 700000,
+        "model_url": "https://wavespeed.ai/models/minimax/h3/text-to-video"
+      },
+      {
+        "rank": 47,
+        "model_id": "pixverse/pixverse-v6/reference-to-video",
+        "model_name": "pixverse/pixverse-v6/reference-to-video",
+        "type": "image-to-video",
+        "description": "PixVerse V6 Reference to Video creates high-quality videos from prompts, up to 10 reference images, and up to 2 reference videos. Use image references for subject, product, character, and scene consistency, and video references for motion, camera movement, action timing, and visual style. Supports optional audio and up to 1080P output. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 1000000,
+        "model_url": "https://wavespeed.ai/models/pixverse/pixverse-v6/reference-to-video"
+      },
+      {
+        "rank": 48,
+        "model_id": "google/gemini-3.1-flash/text-to-speech",
+        "model_name": "google/gemini-3.1-flash/text-to-speech",
+        "type": "text-to-audio",
+        "description": "Gemini 3.1 Flash Text to Speech generates expressive multi-speaker audio from text, with natural voices and multilingual language control for dialogue, narration, localization, and AI voice workflows. Ready-to-use REST inference API, best performance, no coldstarts, affordable pricing.",
+        "base_price": 150000,
+        "model_url": "https://wavespeed.ai/models/google/gemini-3.1-flash/text-to-speech"
+      }
+    ]
+  }
+}

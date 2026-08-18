@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.5.0](https://github.com/dvaJi/infera/compare/infs-v0.4.0...infs-v0.5.0) (2026-04-21)
+
+
+### Features
+
+* add agent skills section to README with installation instructions and available skills ([6b4b0b8](https://github.com/dvaJi/infera/commit/6b4b0b87f66b49d8563995156d5df22c54cb04c4))
+
+
+### Bug Fixes
+
+* address code review feedback on PR [#29](https://github.com/dvaJi/infera/issues/29) ([7bce7e5](https://github.com/dvaJi/infera/commit/7bce7e58c91970c2bedabdf2c9138532feee664c))
+* address critical review comments - fix input/file conflict and multimodal deserialization ([ccd900e](https://github.com/dvaJi/infera/commit/ccd900e0258b790f94fd87f997ac69089cfb1eed))
+* address review feedback on keychain warning and polling comment ([b1448e4](https://github.com/dvaJi/infera/commit/b1448e4c83851e4a3dfe9c34be0eecf33c7e3e91))
+* CLI improvements for v1 release - fix pagination and file flag bugs ([82712ec](https://github.com/dvaJi/infera/commit/82712ecd70ee78094c8333ceb3d28c6af117c641))
+* correct credential priority order and add source detection ([f20d1c3](https://github.com/dvaJi/infera/commit/f20d1c3f42027e7f3f2268437b0a981014b16a14))
+* correct credential priority order and add source detection ([3c65557](https://github.com/dvaJi/infera/commit/3c6555772090e684a09d22941b19134c6407ae29))
+* handle WaveSpeed auth failures gracefully and correct poll URL ([b295f5c](https://github.com/dvaJi/infera/commit/b295f5c22b7b88897ca0c7c2e10e79b80b7caab5))
+* handle WaveSpeed auth failures gracefully and correct poll URL ([683faef](https://github.com/dvaJi/infera/commit/683faef253d0227e93a5106462b5d314d65e7d7b))
+* keychain credentials should always override file credentials ([1818cf4](https://github.com/dvaJi/infera/commit/1818cf4043150f6f5d0e7d5ee292b2a129721001))
+* prevent env-sourced credentials from other providers being persisted to disk ([7e0fe64](https://github.com/dvaJi/infera/commit/7e0fe6490b4c5bfd873d3deae6270e48420733fe))
+* refactor pagination architecture to fix app discovery bug ([637ce15](https://github.com/dvaJi/infera/commit/637ce15c0d91658114de09eea1a305bab84af0f8))
+
 ## [0.4.0](https://github.com/dvaJi/infera/compare/infs-v0.3.0...infs-v0.4.0) (2026-04-05)
 
 

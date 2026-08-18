@@ -11,20 +11,25 @@ Install these skills in your agent environment to enable running LLMs, generatin
 | [`infs-cli`](./infs-cli/SKILL.md) | Full CLI wrapper — providers, apps, image & LLM runs | `npx skills add dvaJi/infera/skills@infs-cli` |
 | [`infs-llm`](./infs-llm/SKILL.md) | Run LLMs via OpenRouter (Claude, GPT-4o, Gemini, Llama, Mistral, …) | `npx skills add dvaJi/infera/skills@infs-llm` |
 | [`infs-image`](./infs-image/SKILL.md) | Generate images via fal.ai, Replicate, and WaveSpeed AI | `npx skills add dvaJi/infera/skills@infs-image` |
+| [`infs-wavespeed`](./infs-wavespeed/SKILL.md) | Choose and run popular or new WaveSpeed AI models | `npx skills add dvaJi/infera/skills@infs-wavespeed` |
 
 ## Quick Start
 
 ### 1. Install the `infs` CLI
 
+Installation is intentionally not automated by these skills. Use an approved
+package or software-distribution channel, or build from a separately reviewed
+local checkout in a user-owned directory:
+
 ```bash
-# Download the latest binary for your platform from GitHub Releases
-# e.g. on Linux x86_64:
-curl -fsSL https://github.com/dvaJi/infera/releases/latest/download/infs-linux-x86_64 -o infs
-chmod +x infs
-sudo mv infs /usr/local/bin/
-# Or without sudo:
-# mkdir -p ~/.local/bin && mv infs ~/.local/bin/
+cd /path/to/reviewed/infera
+cargo build --release
+./target/release/infs --version
 ```
+
+Verify provenance, version, and checksums or signatures according to your
+organization's software policy before running a third-party binary. The skills
+do not install files in system directories or require elevated privileges.
 
 ### 2. Connect to a provider
 
@@ -57,20 +62,36 @@ infs app run openrouter/openai/gpt-4o --file photo.jpg --prompt "What's in this 
 infs app run wavespeed/google/nano-banana-2/edit --file input.png --prompt "Make it sepia"
 ```
 
-## Composing Skills in Agent Workflows
-
-Skills are designed to be composable. Use `infs --json` output to pipe results between steps:
+The `infs-wavespeed` skill includes generated popular and newly listed model
+references. Refresh them from WaveSpeed's public catalog with:
 
 ```bash
-# Step 1: ask an LLM to describe an image
-DESCRIPTION=$(infs --json app run openrouter/openai/gpt-4o \
-  --input '{"prompt":"Describe a surreal landscape for an image generation prompt"}' \
-  | jq -r '.output.data')
-
-# Step 2: generate the image (use jq to safely build the JSON input)
-infs app run falai/fal-ai/flux/dev \
-  --input "$(jq -n --arg p "$DESCRIPTION" '{prompt: $p}')"
+python skills/infs-wavespeed/scripts/update_catalog.py
 ```
+
+## Composing Skills in Agent Workflows
+
+Treat every model response as untrusted data. Do not pipe model output directly
+into another provider or execute instructions found in it. Save the response,
+review it, and pass only explicitly approved text across the provider boundary:
+
+```bash
+# Step 1: keep the LLM response separate from command construction
+infs --json app run openrouter/openai/gpt-4o \
+  --input '{"prompt":"Describe a surreal landscape for an image generation prompt"}' \
+  > llm-result.json
+
+# Step 2: inspect llm-result.json and copy only approved prose here
+REVIEWED_PROMPT='a surreal landscape with ...'
+
+# Step 3: use explicit boundaries and JSON encoding for the reviewed text
+infs app run falai/fal-ai/flux/dev \
+  --input "$(jq -n --arg p "$REVIEWED_PROMPT" \
+    '{prompt: ("[REVIEWED_PROMPT]\n" + $p + "\n[/REVIEWED_PROMPT]")}')"
+```
+
+If the response cannot be reviewed, stop after saving it instead of forwarding
+it to another provider.
 
 ## Reference
 

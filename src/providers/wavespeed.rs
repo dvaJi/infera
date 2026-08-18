@@ -18,7 +18,12 @@ impl WavespeedProvider {
                 id: "wavespeed".to_string(),
                 display_name: "WaveSpeed AI".to_string(),
                 description: "Fast and affordable AI model inference".to_string(),
-                categories: vec![AppCategory::Image, AppCategory::Video],
+                categories: vec![
+                    AppCategory::Image,
+                    AppCategory::Video,
+                    AppCategory::Audio,
+                    AppCategory::Other,
+                ],
                 website: "https://wavespeed.ai".to_string(),
                 api_key_help_url: "https://wavespeed.ai/dashboard".to_string(),
             },
@@ -80,9 +85,14 @@ struct WavespeedModel {
 
 fn map_wavespeed_category(model_type: &str) -> AppCategory {
     match model_type {
-        "text-to-image" | "image-to-image" => AppCategory::Image,
-        "text-to-video" | "image-to-video" => AppCategory::Video,
-        "text-to-audio" | "text-to-speech" => AppCategory::Audio,
+        "text-to-image" | "image-to-image" | "upscaler" | "ai-remover" | "image-to-text"
+        | "portrait-transfer" => AppCategory::Image,
+        "text-to-video" | "image-to-video" | "video-to-video" | "video-extend"
+        | "motion-control" | "digital-human" | "video-dubbing" | "video-effects"
+        | "audio-to-video" => AppCategory::Video,
+        "text-to-audio" | "text-to-speech" | "audio-to-audio" | "speech-to-text" => {
+            AppCategory::Audio
+        }
         _ => AppCategory::Other,
     }
 }
@@ -346,6 +356,8 @@ mod tests {
         assert_eq!(d.id, "wavespeed");
         assert_eq!(d.display_name, "WaveSpeed AI");
         assert_eq!(d.api_key_help_url, "https://wavespeed.ai/dashboard");
+        assert!(d.categories.contains(&AppCategory::Audio));
+        assert!(d.categories.contains(&AppCategory::Other));
     }
 
     #[test]
@@ -373,13 +385,36 @@ mod tests {
 
     #[test]
     fn test_map_wavespeed_category() {
-        assert_eq!(map_wavespeed_category("text-to-image"), AppCategory::Image);
-        assert_eq!(map_wavespeed_category("image-to-image"), AppCategory::Image);
-        assert_eq!(map_wavespeed_category("text-to-video"), AppCategory::Video);
-        assert_eq!(map_wavespeed_category("image-to-video"), AppCategory::Video);
-        assert_eq!(map_wavespeed_category("text-to-audio"), AppCategory::Audio);
-        assert_eq!(map_wavespeed_category("text-to-speech"), AppCategory::Audio);
-        assert_eq!(map_wavespeed_category("unknown"), AppCategory::Other);
+        let cases = [
+            ("text-to-image", AppCategory::Image),
+            ("image-to-image", AppCategory::Image),
+            ("upscaler", AppCategory::Image),
+            ("ai-remover", AppCategory::Image),
+            ("image-to-text", AppCategory::Image),
+            ("portrait-transfer", AppCategory::Image),
+            ("text-to-video", AppCategory::Video),
+            ("image-to-video", AppCategory::Video),
+            ("video-to-video", AppCategory::Video),
+            ("video-extend", AppCategory::Video),
+            ("motion-control", AppCategory::Video),
+            ("digital-human", AppCategory::Video),
+            ("video-dubbing", AppCategory::Video),
+            ("video-effects", AppCategory::Video),
+            ("audio-to-video", AppCategory::Video),
+            ("text-to-audio", AppCategory::Audio),
+            ("text-to-speech", AppCategory::Audio),
+            ("audio-to-audio", AppCategory::Audio),
+            ("speech-to-text", AppCategory::Audio),
+            ("unknown", AppCategory::Other),
+        ];
+
+        for (model_type, expected) in cases {
+            assert_eq!(
+                map_wavespeed_category(model_type),
+                expected,
+                "unexpected category for {model_type}"
+            );
+        }
     }
 
     #[test]
