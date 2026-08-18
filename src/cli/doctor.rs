@@ -44,7 +44,7 @@ pub async fn handle(load_env: bool) -> Result<()> {
 
         if status == ProviderConnectionStatus::Connected {
             // Show where the credential is located
-            if let Ok(source) = config::get_credential_source(&d.id) {
+            if let Ok(source) = config::get_credential_source_with_env(&d.id, load_env) {
                 println!("    Key location: {}", source.display());
             }
         } else {

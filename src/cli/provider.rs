@@ -1,5 +1,5 @@
 use crate::auth;
-use crate::config;
+use crate::config::{self, ProviderConfig};
 use crate::providers::registry::build_registry;
 use crate::types::ProviderConnectionStatus;
 use anyhow::Result;
@@ -15,10 +15,18 @@ pub struct ProviderCommands {
 pub enum ProviderSubcommands {
     /// List all supported providers
     List,
+    /// Show local authentication status for a provider
+    Status {
+        /// Provider ID
+        provider: String,
+    },
     /// Connect to a provider
     Connect {
         /// Provider ID (e.g. openrouter, falai)
         provider: String,
+        /// Save the key without making a provider API request
+        #[arg(long)]
+        skip_validation: bool,
     },
     /// Disconnect from a provider
     Disconnect {
@@ -35,10 +43,14 @@ pub enum ProviderSubcommands {
 pub async fn handle(cmd: ProviderCommands, json: bool, load_env: bool) -> Result<()> {
     match cmd.command {
         ProviderSubcommands::List => list_providers(json, load_env).await,
-        ProviderSubcommands::Connect { provider } => connect_provider(&provider, load_env).await,
-        ProviderSubcommands::Disconnect { provider } => {
-            disconnect_provider(&provider, load_env).await
+        ProviderSubcommands::Status { provider } => {
+            status_provider(&provider, json, load_env).await
         }
+        ProviderSubcommands::Connect {
+            provider,
+            skip_validation,
+        } => connect_provider(&provider, skip_validation).await,
+        ProviderSubcommands::Disconnect { provider } => disconnect_provider(&provider).await,
         ProviderSubcommands::Show { provider } => show_provider(&provider, json, load_env).await,
     }
 }
@@ -93,7 +105,7 @@ async fn list_providers(json: bool, load_env: bool) -> Result<()> {
     Ok(())
 }
 
-async fn connect_provider(provider_id: &str, load_env: bool) -> Result<()> {
+async fn connect_provider(provider_id: &str, skip_validation: bool) -> Result<()> {
     let registry = build_registry();
     let provider = registry.find_provider(provider_id)?;
     let d = provider.descriptor();
@@ -116,8 +128,23 @@ async fn connect_provider(provider_id: &str, load_env: bool) -> Result<()> {
     };
 
     let credentials = auth::prompt_credentials(&auth_descriptor)?;
+    let candidate_config = ProviderConfig {
+        auth_method: Some("api_key".to_string()),
+        credentials: credentials.clone(),
+        ..Default::default()
+    };
 
-    config::save_provider_credentials_with_env(provider_id, credentials, load_env)?;
+    if skip_validation {
+        eprintln!("Skipping API key validation.");
+    } else {
+        eprintln!("Validating API key...");
+        provider
+            .validate_credentials(&candidate_config)
+            .await
+            .map_err(|error| anyhow::anyhow!("Could not validate credentials: {}", error))?;
+    }
+
+    config::save_provider_credentials(provider_id, credentials)?;
 
     eprintln!();
     println!("Successfully connected to {}!", d.display_name);
@@ -129,11 +156,64 @@ async fn connect_provider(provider_id: &str, load_env: bool) -> Result<()> {
     Ok(())
 }
 
-async fn disconnect_provider(provider_id: &str, load_env: bool) -> Result<()> {
+async fn status_provider(provider_id: &str, json: bool, load_env: bool) -> Result<()> {
+    let registry = build_registry();
+    let provider = registry.find_provider(provider_id)?;
+    let descriptor = provider.descriptor();
+    let app_config = config::load_config_with_env(load_env)?;
+    let provider_config = app_config.providers.get(provider_id);
+    let api_key = provider_config.and_then(|config| config.get_api_key());
+    let connected =
+        provider_config.is_some_and(|config| config.connected && config.get_api_key().is_some());
+    let status = if connected {
+        ProviderConnectionStatus::Connected
+    } else {
+        ProviderConnectionStatus::NotConnected
+    };
+    let source = config::get_credential_source_with_env(provider_id, load_env)?;
+    let credential_hint = api_key.map(mask_credential);
+
+    if json {
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&serde_json::json!({
+                "id": descriptor.id,
+                "name": descriptor.display_name,
+                "connected": connected,
+                "status": status.to_string(),
+                "credential_source": source.display(),
+                "credential_hint": credential_hint,
+            }))?
+        );
+    } else {
+        println!("Provider:  {}", descriptor.display_name);
+        println!("Status:    {}", status);
+        println!(
+            "Credential: {}",
+            credential_hint.unwrap_or_else(|| "not configured".to_string())
+        );
+        println!("Source:     {}", source.display());
+    }
+
+    Ok(())
+}
+
+fn mask_credential(value: &str) -> String {
+    let characters: Vec<char> = value.chars().collect();
+    if characters.len() <= 8 {
+        return "****".to_string();
+    }
+
+    let prefix: String = characters.iter().take(4).collect();
+    let suffix: String = characters.iter().rev().take(4).rev().collect();
+    format!("{}...{}", prefix, suffix)
+}
+
+async fn disconnect_provider(provider_id: &str) -> Result<()> {
     let registry = build_registry();
     let provider = registry.find_provider(provider_id)?;
 
-    config::remove_provider_credentials_with_env(provider_id, load_env)?;
+    config::remove_provider_credentials(provider_id)?;
     println!("Disconnected from {}.", provider.descriptor().display_name);
 
     Ok(())
@@ -222,4 +302,20 @@ async fn show_provider(provider_id: &str, json: bool, load_env: bool) -> Result<
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::mask_credential;
+
+    #[test]
+    fn masks_long_credentials() {
+        assert_eq!(mask_credential("sk-or-v1-1234567890"), "sk-o...7890");
+    }
+
+    #[test]
+    fn does_not_reveal_short_credentials() {
+        assert_eq!(mask_credential("short"), "****");
+        assert_eq!(mask_credential("12345678"), "****");
+    }
 }

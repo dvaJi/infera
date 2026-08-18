@@ -55,7 +55,7 @@ All tests must pass before submitting any change.
     ├── error.rs                  # InfsError (thiserror)
     ├── types.rs                  # AppDescriptor, RunResponse, ProviderDescriptor, AuthMethod, …
     ├── config/
-    │   └── mod.rs                # Config + credentials load/save; credentials written mode 0600 on Unix
+    │   └── mod.rs                # Config + credentials load/save; config.json is mode 0600 on Unix
     ├── auth/
     │   └── mod.rs                # AuthMethod enum
     ├── providers/
@@ -69,7 +69,7 @@ All tests must pass before submitting any change.
     │   └── mod.rs                # AppCatalog — aggregates listings across all providers
     └── cli/
         ├── mod.rs                # CLI root; Clap Command enum
-        ├── provider.rs           # provider list / connect / show / disconnect
+        ├── provider.rs           # provider list / status / connect / show / disconnect
         ├── app.rs                # app list / run / show
         ├── config.rs             # config path
         ├── update.rs             # self check / self update
@@ -104,10 +104,10 @@ The full app ID used on the command line is `<provider_id>/<app_id>`, e.g. `open
 
 ### Config & Credentials
 
-- Config directory: resolved by the `directories` crate (`ProjectDirs`).
-- `config.toml` — non-sensitive settings; `credentials.toml` — API keys.
-- `save_config` deliberately strips credentials before writing `config.toml`.
-- On Unix, `credentials.toml` is created with mode `0o600`.
+- Config directory: resolved by the `directories` crate (`BaseDirs`), then `<config-dir>/infs/config.json`.
+- `config.json` contains provider settings and API keys in one user-level file.
+- `save_config` writes the JSON configuration and keeps credentials loaded from provider CLIs runtime-only.
+- On Unix, `config.json` is created with mode `0o600`.
 
 ## Common Patterns
 
@@ -170,6 +170,6 @@ Binary targets built on each release:
 ## Things to Avoid
 
 - Do **not** hardcode API endpoints inside test code; use mocks or feature flags.
-- Do **not** store secrets in `config.toml`; they belong in `credentials.toml`.
+- Do **not** hardcode API keys in source code or tests.
 - Do **not** bump versions in `Cargo.toml` manually — Release Please does this automatically.
 - Do **not** use `{provider.website}/keys` to construct help URLs; use `descriptor.api_key_help_url`.

@@ -7,7 +7,10 @@ This document tracks the development roadmap for `infs`, a provider-agnostic CLI
 - [x] **fal.ai execution** — Image generation via async queue API
 - [x] **Replicate execution** — Image generation via prediction polling API
 - [x] **WaveSpeed AI execution** — Image and video generation
-- [x] **OS keychain integration** — Credentials stored securely in the OS keychain via `keyring` crate (falls back to `credentials.toml` when keychain is unavailable)
+- [x] **Single user-level JSON configuration** — Provider settings and API keys are stored together in `config.json`
+- [x] **Official CLI credential reuse** — Reuse credentials saved by the WaveSpeed and Replicate CLIs
+- [x] **Provider auth status** — Show credential source and masked key hints, including JSON output
+- [x] **Credential validation on connect** — Verify API keys before saving them, with an offline opt-out
 - [x] **`--json` output flag** — Machine-readable JSON output for scripting and automation (`infs --json ...`)
 - [x] **Shell completion scripts** — Generate completions for bash, zsh, fish, PowerShell, and elvish (`infs completions <shell>`)
 - [x] **Retry logic with exponential backoff** — Automatically retries transient network errors and HTTP 5xx responses with capped exponential backoff

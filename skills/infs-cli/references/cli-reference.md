@@ -19,15 +19,25 @@ infs provider list
 infs --json provider list
 ```
 
+### `infs provider status <id>`
+
+Show local authentication status, credential source, and a masked credential hint. It does not make a provider API request.
+
+```bash
+infs provider status openrouter
+infs --json provider status wavespeed
+```
+
 ### `infs provider connect <id>`
 
-Connect to a provider interactively (prompts for API key).
+Connect to a provider interactively (prompts for an API key and validates it before saving).
 
 ```bash
 infs provider connect openrouter
 infs provider connect falai
 infs provider connect replicate
 infs provider connect wavespeed
+infs provider connect openrouter --skip-validation
 ```
 
 ### `infs provider show <id>`

@@ -32,7 +32,7 @@ src/
 ├── main.rs              # Binary entry point — wires CLI to commands
 ├── error.rs             # InfsError enum (thiserror-based)
 ├── types.rs             # Shared types: AppDescriptor, RunResponse, ProviderDescriptor, …
-├── config/              # Config + credentials load/save (TOML)
+├── config/              # Config + credentials load/save (JSON)
 ├── auth/                # AuthMethod abstractions
 ├── providers/           # Provider trait, registry, and per-provider adapters
 │   ├── mod.rs           # Provider async trait
@@ -44,7 +44,7 @@ src/
 ├── catalog/             # Aggregates listings across providers
 └── cli/                 # Clap-based subcommands
     ├── mod.rs
-    ├── provider.rs      # provider list/connect/show/disconnect
+    ├── provider.rs      # provider list/status/connect/show/disconnect
     ├── app.rs           # app list/run/show
     ├── config.rs        # config path
     └── doctor.rs        # doctor
@@ -102,7 +102,7 @@ A `!` suffix (e.g. `feat!: …`) or a `BREAKING CHANGE:` footer triggers a **maj
 
 ```
 feat(providers): add ElevenLabs TTS provider
-fix(config): handle missing credentials.toml gracefully
+fix(config): handle missing config.json gracefully
 docs: add curl install snippet to README
 chore: update dependencies
 ```

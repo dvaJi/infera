@@ -1,4 +1,4 @@
-use super::Provider;
+use super::{validate_response, validation_client, Provider};
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::types::{
@@ -346,6 +346,18 @@ impl Provider for FalAiProvider {
             return Err(InfsError::ProviderNotConfigured("falai".to_string()));
         }
         Ok(())
+    }
+
+    async fn validate_credentials(&self, config: &ProviderConfig) -> Result<(), InfsError> {
+        self.validate_config(config)?;
+        let api_key = config.get_api_key().expect("validated API key");
+        let response = validation_client()?
+            .get("https://api.fal.ai/v1/models")
+            .header("Authorization", format!("Key {}", api_key))
+            .send()
+            .await?;
+
+        validate_response(response, "falai").await
     }
 }
 

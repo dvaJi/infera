@@ -1,4 +1,4 @@
-use super::Provider;
+use super::{validate_response, validation_client, Provider};
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::retry::with_retry;
@@ -303,6 +303,20 @@ impl Provider for OpenRouterProvider {
             return Err(InfsError::ProviderNotConfigured("openrouter".to_string()));
         }
         Ok(())
+    }
+
+    async fn validate_credentials(&self, config: &ProviderConfig) -> Result<(), InfsError> {
+        self.validate_config(config)?;
+        let api_key = config.get_api_key().expect("validated API key");
+        let response = validation_client()?
+            .get("https://openrouter.ai/api/v1/key")
+            .header("Authorization", format!("Bearer {}", api_key))
+            .header("HTTP-Referer", "https://github.com/dvaJi/infera")
+            .header("X-Title", "infs")
+            .send()
+            .await?;
+
+        validate_response(response, "openrouter").await
     }
 
     fn supports_streaming(&self) -> bool {
