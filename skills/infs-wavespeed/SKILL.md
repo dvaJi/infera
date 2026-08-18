@@ -8,7 +8,7 @@ description: >
   when a user asks to use WaveSpeed AI, generate or edit media with a
   WaveSpeed model, compare popular or new models, or automate a WaveSpeed
   inference workflow.
-allowed-tools: Bash(infs *) Bash(jq *)
+allowed-tools: Bash(infs *) Bash(jq *) Bash(python *)
 ---
 
 # WaveSpeed AI through infs
