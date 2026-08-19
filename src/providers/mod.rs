@@ -26,6 +26,15 @@ pub trait Provider: Send + Sync {
     ) -> Result<RunResponse, InfsError>;
     fn validate_config(&self, config: &ProviderConfig) -> Result<(), InfsError>;
 
+    /// Validate credentials with a non-mutating provider API request.
+    ///
+    /// Providers should override this when they have a lightweight account or
+    /// metadata endpoint. The default uses model discovery as a fallback.
+    async fn validate_credentials(&self, config: &ProviderConfig) -> Result<(), InfsError> {
+        self.validate_config(config)?;
+        self.list_apps(config).await.map(|_| ())
+    }
+
     /// Returns true if this provider supports token-by-token streaming output.
     fn supports_streaming(&self) -> bool {
         false
@@ -55,4 +64,32 @@ pub trait Provider: Send + Sync {
         }
         Ok(())
     }
+}
+
+pub(crate) fn validation_client() -> Result<reqwest::Client, InfsError> {
+    reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(10))
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(InfsError::NetworkError)
+}
+
+pub(crate) async fn validate_response(
+    response: reqwest::Response,
+    provider: &str,
+) -> Result<(), InfsError> {
+    let status = response.status();
+    if status.is_success() {
+        return Ok(());
+    }
+
+    let message = response
+        .text()
+        .await
+        .unwrap_or_else(|_| "Unknown error".to_string());
+    Err(InfsError::ApiError {
+        provider: provider.to_string(),
+        status: status.as_u16(),
+        message,
+    })
 }

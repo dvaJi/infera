@@ -1,4 +1,4 @@
-use super::Provider;
+use super::{validate_response, validation_client, Provider};
 use crate::config::ProviderConfig;
 use crate::error::InfsError;
 use crate::types::{
@@ -346,6 +346,18 @@ impl Provider for ReplicateProvider {
             return Err(InfsError::ProviderNotConfigured("replicate".to_string()));
         }
         Ok(())
+    }
+
+    async fn validate_credentials(&self, config: &ProviderConfig) -> Result<(), InfsError> {
+        self.validate_config(config)?;
+        let api_key = config.get_api_key().expect("validated API key");
+        let response = validation_client()?
+            .get("https://api.replicate.com/v1/account")
+            .header("Authorization", format!("Bearer {}", api_key))
+            .send()
+            .await?;
+
+        validate_response(response, "replicate").await
     }
 }
 

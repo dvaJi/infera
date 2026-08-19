@@ -81,13 +81,10 @@
 * Add infs Rust CLI with provider registry, OpenRouter adapter, and scaffolded image providers ([c44d6aa](https://github.com/dvaJi/infera/commit/c44d6aad183d133b1ac3a45b9b25445957812acd))
 * Fetch models live from provider APIs for app list command ([2824f0c](https://github.com/dvaJi/infera/commit/2824f0cc245450cfa0a4ddd9bfbc47384212a7fa))
 * initial Rust CLI project for infs ([7c7846d](https://github.com/dvaJi/infera/commit/7c7846ddd8f266a2af60b0bcc8f50fb43313655f))
-* integrate OS keychain via keyring crate for credential storage ([1b1c68b](https://github.com/dvaJi/infera/commit/1b1c68b0c97ed905816faf44ed67b89d44237b3d))
-* integrate OS keychain via keyring crate for credential storage ([21b303c](https://github.com/dvaJi/infera/commit/21b303ce93cbaa4a2a1247a87ec28ab57467b740))
 
 
 ### Bug Fixes
 
-* address keyring review comments — sort keys, ignore e2e test, clear stale metadata, delete orphaned entries ([362d38a](https://github.com/dvaJi/infera/commit/362d38a7c118f294f11332c28566ba7e7ace00e5))
 * address PR review feedback on retry, streaming, pagination, and image download ([620deec](https://github.com/dvaJi/infera/commit/620deecf4188b5e14c0e24dfa79252798b987757))
 * Apply all code review feedback from automated PR review ([e3b567e](https://github.com/dvaJi/infera/commit/e3b567e6b3c06a020f97ec4a91af58e750a80873))
 

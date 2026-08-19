@@ -44,7 +44,7 @@ Each provider uses API key authentication.  Run the interactive connect command:
 infs provider connect <provider-id>
 ```
 
-You will be prompted to enter your API key.  The key is stored securely — in the OS keychain when available, or in `credentials.toml` with `0600` permissions on Unix.
+You will be prompted to enter your API key. The key is stored in the user-level `infs` JSON configuration at `config.json`; on Unix, the file is written with `0600` permissions.
 
 ### Provider IDs and Key URLs
 
@@ -64,6 +64,17 @@ infs provider connect replicate
 infs provider connect wavespeed
 ```
 
+`connect` validates the API key with the provider before saving it. For offline setup, use `infs provider connect <provider-id> --skip-validation`.
+
+## Reuse provider CLI credentials
+
+`infs` reads credentials saved by the official provider CLIs when no credential is already stored in `infs` configuration:
+
+- WaveSpeed: the key saved by `wavespeed login`
+- Replicate: the token saved by `replicate auth login`
+
+These files are read without modifying them.
+
 ## Verify Connection
 
 ```bash
@@ -72,6 +83,13 @@ infs provider list
 
 # Run the health check
 infs doctor
+```
+
+To inspect one provider without making a network request:
+
+```bash
+infs provider status openrouter
+infs --json provider status openrouter
 ```
 
 ## Disconnect
@@ -90,11 +108,8 @@ Default locations:
 
 | OS | Path |
 |---|---|
-| Linux | `~/.config/infs/` |
-| macOS | `~/Library/Application Support/infs/infs/` |
-| Windows | `%APPDATA%\infs\infs\` |
+| Linux | `~/.config/infs/config.json` |
+| macOS | `~/Library/Application Support/infs/config.json` |
+| Windows | `%APPDATA%\infs\config.json` |
 
-Two files are used:
-
-- `config.toml` — provider settings (non-sensitive)
-- `credentials.toml` — API keys (sensitive, mode `0600` on Unix)
+The JSON file contains provider settings and API keys. Use `infs config path` for the exact path on the current machine.

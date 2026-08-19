@@ -22,10 +22,8 @@ pub async fn handle(cmd: ConfigCommands) -> Result<()> {
 
 async fn show_path() -> Result<()> {
     let config_path = config::get_config_path()?;
-    let creds_path = config::get_credentials_path()?;
 
-    println!("Config:      {}", config_path.display());
-    println!("Credentials: {}", creds_path.display());
+    println!("Config: {}", config_path.display());
 
     Ok(())
 }

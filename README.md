@@ -126,6 +126,10 @@ cargo install --path .
 # List all providers and their connection status
 infs provider list
 
+# Show local authentication status, source, and a masked key hint
+infs provider status openrouter
+infs --json provider status openrouter
+
 # Connect to a provider (interactive)
 infs provider connect openrouter
 
@@ -270,17 +274,37 @@ Any model available on WaveSpeed can be run using its WaveSpeed model ID.
 
 ## Authentication
 
-`infs` stores configuration in your OS's standard config directory:
+`infs` stores provider settings and API keys in one JSON file in your OS's standard user config directory:
 
-- **Linux:** `~/.config/infs/`
-- **macOS:** `~/Library/Application Support/infs/infs/`
-- **Windows:** `%APPDATA%\infs\infs\`
+- **Linux:** `~/.config/infs/config.json`
+- **macOS:** `~/Library/Application Support/infs/config.json`
+- **Windows:** `%APPDATA%\infs\config.json`
 
-Two files are used:
-- `config.toml` — provider settings and metadata (non-sensitive)
-- `credentials.toml` — API keys and secrets
+Run `infs config path` to print the exact path on your system. The file contains provider metadata and credentials, so protect it like any other API-key file. On Unix, `infs` writes it with file mode `0600`.
 
-> **Note:** On Unix, `credentials.toml` is written with file mode `0600` (owner read/write only). A future version will optionally integrate with the OS keychain via the `keyring` crate.
+`infs provider connect <provider>` writes the provider API key to this file, and `infs provider disconnect <provider>` removes that provider's stored credentials.
+
+When connecting, `infs` validates the API key with the provider before saving it. If you are offline or the provider API is temporarily unavailable, use `--skip-validation` to save the key without the check.
+
+Example:
+
+```json
+{
+  "providers": {
+    "openrouter": {
+      "auth_method": "api_key",
+      "credentials": {
+        "api_key": "sk-or-v1-..."
+      },
+      "connected": true
+    }
+  }
+}
+```
+
+For WaveSpeed, `infs` also reuses an API key saved by the official `wavespeed` CLI (`wavespeed login`). It reads the CLI's `apiKey` from its platform-specific `wavespeed-nodejs` config location without modifying or deleting that file.
+
+For Replicate, `infs` also reuses the token saved by the official `replicate` CLI (`replicate auth login`). It reads the `api.replicate.com` entry from `~/.config/replicate/hosts` (or `$XDG_CONFIG_HOME/replicate/hosts`) without modifying or deleting that file.
 
 ### Environment Variables (.env)
 
@@ -301,7 +325,7 @@ Two files are used:
 |----------|---------------------|
 | OpenRouter | `OPENROUTER_API_KEY` |
 | fal.ai | `FALAI_API_KEY` |
-| Replicate | `REPLICATE_API_TOKEN` |
+| Replicate | `REPLICATE_API_TOKEN` or `REPLICATE_API_KEY` |
 | WaveSpeed | `WAVESPEED_API_KEY` |
 
 #### Example `.env` file
@@ -318,13 +342,13 @@ WAVESPEED_API_KEY=xxxxxxxxxxxxx
 
 When multiple sources are available, `infs` uses this priority (highest wins):
 
-1. **OS keychain** — most secure, managed via `infs provider connect`
-2. **credentials.toml** — fallback file storage
-3. **.env / environment variables** — lowest priority, good for defaults
+1. **.env / environment variables** — highest priority
+2. **`infs` config.json** — managed via `infs provider connect`
+3. **Provider CLI config** — fallback for keys saved by `wavespeed login` or `replicate auth login`
 
 #### Disabling .env loading
 
-To skip `.env` loading and use only the credentials manager:
+To skip `.env` loading and use only the stored `infs` configuration and supported provider CLI credentials:
 
 ```bash
 infs --no-env provider list
@@ -518,7 +542,10 @@ See [ROADMAP.md](ROADMAP.md) for the full roadmap. Summary:
 
 **Completed:**
 - [x] fal.ai, Replicate, and WaveSpeed AI execution
-- [x] OS keychain integration for credential storage (`keyring` crate)
+- [x] Single user-level JSON configuration for provider credentials
+- [x] Reuse credentials from the official WaveSpeed and Replicate CLIs
+- [x] Provider auth status with masked credential hints and JSON output
+- [x] Credential validation before saving provider connections
 - [x] `--json` output flag for machine-friendly output
 - [x] Shell completion scripts (`infs completions bash/zsh/fish/powershell/elvish`)
 - [x] Retry logic with exponential backoff

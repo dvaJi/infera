@@ -64,6 +64,8 @@ infs provider connect replicate    # image — get key at https://replicate.com/
 infs provider connect wavespeed    # image/video — get key at https://wavespeed.ai/dashboard
 ```
 
+Connection validates the key before saving. Use `--skip-validation` only when the provider API cannot be reached.
+
 ## Quick Examples
 
 ```bash
@@ -109,6 +111,9 @@ infs app show openrouter/anthropic/claude-sonnet-4-5
 # List all providers and their connection status
 infs provider list
 
+# Show local auth source and a masked key hint
+infs provider status openrouter
+
 # Show provider details
 infs provider show openrouter
 
@@ -133,6 +138,7 @@ infs --json app run openrouter/openai/gpt-4o --input '{"prompt":"Hello"}'
 | Task | Command |
 |---|---|
 | List all providers | `infs provider list` |
+| Show auth status | `infs provider status <id>` |
 | Connect to provider | `infs provider connect <id>` |
 | Show provider details | `infs provider show <id>` |
 | Disconnect from provider | `infs provider disconnect <id>` |
