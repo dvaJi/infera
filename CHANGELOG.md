@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.6.0](https://github.com/dvaJi/infera/compare/infs-v0.5.0...infs-v0.6.0) (2026-08-19)
+
+
+### Features
+
+* add WaveSpeed model skills ([#31](https://github.com/dvaJi/infera/issues/31)) ([9dcd767](https://github.com/dvaJi/infera/commit/9dcd767deb2f385ff774ab2793e011ae50be2c36))
+* simplify provider authentication management ([#34](https://github.com/dvaJi/infera/issues/34)) ([5a5b991](https://github.com/dvaJi/infera/commit/5a5b991d0a70f2c2af0ab6afba2a98f736e625ac))
+
+
+### Bug Fixes
+
+* **security:** harden agent skill workflows ([#32](https://github.com/dvaJi/infera/issues/32)) ([4b274b6](https://github.com/dvaJi/infera/commit/4b274b65aa7e5fcb4eb5f895336795f3a63f45b8))
+
 ## [0.5.0](https://github.com/dvaJi/infera/compare/infs-v0.4.0...infs-v0.5.0) (2026-04-21)
 
 
