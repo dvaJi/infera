@@ -10,6 +10,9 @@ const INFS_CONFIG_DIR: &str = "infs";
 /// Configuration directory name used by the official WaveSpeed Node.js CLI.
 const WAVESPEED_CLI_CONFIG_DIR: &str = "wavespeed-nodejs";
 
+/// Service name used by previous infs releases for OS keychain entries.
+const PREVIOUS_KEYRING_SERVICE: &str = "infs";
+
 /// Maximum number of parent directories to search for .env files.
 const MAX_ENV_PARENT_DEPTH: usize = 3;
 
@@ -22,6 +25,10 @@ const PROVIDER_ENV_PATTERNS: &[(&str, &str, &str)] = &[
     ("replicate", "REPLICATE_API_TOKEN", "api_key"),
     ("wavespeed", "WAVESPEED_API_KEY", "api_key"),
 ];
+
+fn is_false(value: &bool) -> bool {
+    !*value
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AppConfig {
@@ -37,6 +44,9 @@ pub struct ProviderConfig {
     pub credentials: HashMap<String, String>,
     #[serde(default)]
     pub connected: bool,
+    /// Prevent environment and provider-CLI credentials from being used.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub external_credentials_disabled: bool,
     /// Credential keys loaded from an official provider CLI config.
     /// These are available at runtime but must not be written to infs' config.
     #[serde(skip)]
@@ -58,6 +68,157 @@ pub fn get_config_dir() -> Result<PathBuf, InfsError> {
 
 pub fn get_config_path() -> Result<PathBuf, InfsError> {
     Ok(get_config_dir()?.join("config.json"))
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct PreviousAppConfig {
+    #[serde(default)]
+    providers: HashMap<String, PreviousProviderConfig>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct PreviousProviderConfig {
+    #[serde(default)]
+    auth_method: Option<String>,
+    #[serde(default)]
+    credentials: HashMap<String, String>,
+    #[serde(default)]
+    connected: bool,
+    #[serde(default)]
+    keychain_credentials: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct PreviousCredentialProvider {
+    #[serde(default)]
+    credentials: HashMap<String, String>,
+}
+
+fn previous_config_dir() -> Option<PathBuf> {
+    let base_dirs = BaseDirs::new()?;
+    Some(
+        base_dirs
+            .config_dir()
+            .join(INFS_CONFIG_DIR)
+            .join(INFS_CONFIG_DIR),
+    )
+}
+
+fn parse_previous_config(content: &str) -> Result<PreviousAppConfig, InfsError> {
+    toml::from_str(content).map_err(|error| {
+        InfsError::ConfigError(format!("Failed to parse previous config: {error}"))
+    })
+}
+
+fn parse_previous_credentials(
+    content: &str,
+) -> Result<HashMap<String, PreviousCredentialProvider>, InfsError> {
+    toml::from_str(content).map_err(|error| {
+        InfsError::ConfigError(format!("Failed to parse previous credentials: {error}"))
+    })
+}
+
+fn previous_keychain_credential(
+    provider_id: &str,
+    credential_key: &str,
+) -> Result<Option<String>, InfsError> {
+    let username = format!("{provider_id}/{credential_key}");
+    let entry = match keyring::Entry::new(PREVIOUS_KEYRING_SERVICE, &username) {
+        Ok(entry) => entry,
+        Err(keyring::Error::NoStorageAccess(_)) | Err(keyring::Error::PlatformFailure(_)) => {
+            return Ok(None);
+        }
+        Err(error) => {
+            return Err(InfsError::ConfigError(format!(
+                "Failed to access previous keychain entry {provider_id}/{credential_key}: {error}"
+            )));
+        }
+    };
+
+    match entry.get_password() {
+        Ok(value) => {
+            let value = value.trim().to_string();
+            Ok((!value.is_empty()).then_some(value))
+        }
+        Err(keyring::Error::NoEntry)
+        | Err(keyring::Error::NoStorageAccess(_))
+        | Err(keyring::Error::PlatformFailure(_)) => Ok(None),
+        Err(error) => Err(InfsError::ConfigError(format!(
+            "Failed to read previous keychain entry {provider_id}/{credential_key}: {error}"
+        ))),
+    }
+}
+
+/// Import provider settings and credentials from the previous on-disk layout.
+/// The source files and keychain entries are left untouched for recovery.
+fn migrate_previous_config() -> Result<Option<AppConfig>, InfsError> {
+    let Some(previous_dir) = previous_config_dir() else {
+        return Ok(None);
+    };
+    let previous_config_path = previous_dir.join("config.toml");
+    let previous_credentials_path = previous_dir.join("credentials.toml");
+
+    if !previous_config_path.exists() && !previous_credentials_path.exists() {
+        return Ok(None);
+    }
+
+    let previous_config = if previous_config_path.exists() {
+        let content = std::fs::read_to_string(&previous_config_path).map_err(|error| {
+            InfsError::ConfigError(format!("Failed to read previous config: {error}"))
+        })?;
+        parse_previous_config(&content)?
+    } else {
+        PreviousAppConfig::default()
+    };
+
+    let previous_credentials = if previous_credentials_path.exists() {
+        let content = std::fs::read_to_string(&previous_credentials_path).map_err(|error| {
+            InfsError::ConfigError(format!("Failed to read previous credentials: {error}"))
+        })?;
+        parse_previous_credentials(&content)?
+    } else {
+        HashMap::new()
+    };
+
+    let mut config = AppConfig::default();
+
+    for (provider_id, previous_provider) in &previous_config.providers {
+        let provider_config = config.providers.entry(provider_id.clone()).or_default();
+        provider_config.auth_method = previous_provider.auth_method.clone();
+        provider_config.credentials = previous_provider.credentials.clone();
+        provider_config.connected = previous_provider.connected;
+    }
+
+    // The previous loader treated credentials.toml as a fallback below values
+    // already present in config.toml.
+    for (provider_id, previous_provider) in previous_credentials {
+        let provider_config = config.providers.entry(provider_id).or_default();
+        for (key, value) in previous_provider.credentials {
+            provider_config.credentials.entry(key).or_insert(value);
+        }
+    }
+
+    // Keychain values had the highest priority in the previous loader.
+    for (provider_id, previous_provider) in &previous_config.providers {
+        let provider_config = config.providers.entry(provider_id.clone()).or_default();
+        for credential_key in &previous_provider.keychain_credentials {
+            if let Some(value) = previous_keychain_credential(provider_id, credential_key)? {
+                provider_config
+                    .credentials
+                    .insert(credential_key.clone(), value);
+            }
+        }
+    }
+
+    for provider_config in config.providers.values_mut() {
+        if provider_config.get_api_key().is_some() {
+            provider_config.connected = true;
+        }
+    }
+
+    save_config(&config)?;
+    tracing::info!("Imported provider settings and credentials into the new config.json");
+    Ok(Some(config))
 }
 
 // ---------------------------------------------------------------------------
@@ -171,6 +332,10 @@ fn replicate_cli_api_token() -> Option<String> {
 fn merge_external_credential(config: &mut AppConfig, provider_id: &str, credential: String) {
     let provider_config = config.providers.entry(provider_id.to_string()).or_default();
 
+    if provider_config.external_credentials_disabled {
+        return;
+    }
+
     // A key explicitly stored by infs always wins over an official provider
     // CLI credential.
     if provider_config.credentials.contains_key("api_key") {
@@ -246,6 +411,9 @@ fn merge_env_credentials(
 ) {
     for (provider_id, credentials) in env_credentials {
         let provider_config = config.providers.entry(provider_id).or_default();
+        if provider_config.external_credentials_disabled {
+            continue;
+        }
         provider_config.connected = true;
         for (key, value) in credentials {
             provider_config
@@ -291,7 +459,13 @@ pub fn get_credential_source_with_env(
         .map(|(_, _, key)| *key)
         .unwrap_or("api_key");
 
-    if load_env {
+    let config = load_config_with_env(false)?;
+    let external_credentials_disabled = config
+        .providers
+        .get(provider_id)
+        .is_some_and(|provider_config| provider_config.external_credentials_disabled);
+
+    if load_env && !external_credentials_disabled {
         for (known_provider, env_var, _) in PROVIDER_ENV_PATTERNS.iter().rev() {
             if *known_provider == provider_id {
                 if let Ok(value) = std::env::var(env_var) {
@@ -305,7 +479,6 @@ pub fn get_credential_source_with_env(
         }
     }
 
-    let config = load_config_with_env(false)?;
     if let Some(provider_config) = config.providers.get(provider_id) {
         if provider_config.credentials.contains_key(credential_key) {
             if provider_config
@@ -339,7 +512,7 @@ pub fn load_config_with_env(load_env: bool) -> Result<AppConfig, InfsError> {
         serde_json::from_str(&content)
             .map_err(|error| InfsError::ConfigError(format!("Failed to parse config: {}", error)))?
     } else {
-        AppConfig::default()
+        migrate_previous_config()?.unwrap_or_default()
     };
 
     if let Some(api_key) = wavespeed_cli_api_key() {
@@ -381,34 +554,49 @@ pub fn save_config(config: &AppConfig) -> Result<(), InfsError> {
 }
 
 fn write_config_file(path: &Path, content: &str) -> Result<(), InfsError> {
+    use std::io::Write;
+
+    let parent = path
+        .parent()
+        .ok_or_else(|| InfsError::ConfigError("Config path has no parent directory".to_string()))?;
+    let mut temporary_file = tempfile::NamedTempFile::new_in(parent).map_err(|error| {
+        InfsError::ConfigError(format!("Failed to create temporary config file: {error}"))
+    })?;
+
     #[cfg(unix)]
     {
-        use std::io::Write;
-        use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+        use std::os::unix::fs::PermissionsExt;
 
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(path)
-            .map_err(|error| {
-                InfsError::ConfigError(format!("Failed to open config file: {}", error))
-            })?;
-        file.write_all(content.as_bytes()).map_err(|error| {
-            InfsError::ConfigError(format!("Failed to write config file: {}", error))
+        std::fs::set_permissions(
+            temporary_file.path(),
+            std::fs::Permissions::from_mode(0o600),
+        )
+        .map_err(|error| {
+            InfsError::ConfigError(format!("Failed to secure temporary config file: {error}"))
         })?;
-        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600)).map_err(
-            |error| InfsError::ConfigError(format!("Failed to secure config file: {}", error)),
-        )?;
-        Ok(())
     }
-    #[cfg(not(unix))]
+
+    temporary_file
+        .write_all(content.as_bytes())
+        .map_err(|error| InfsError::ConfigError(format!("Failed to write config file: {error}")))?;
+    temporary_file
+        .as_file_mut()
+        .sync_all()
+        .map_err(|error| InfsError::ConfigError(format!("Failed to sync config file: {error}")))?;
+    temporary_file.persist(path).map_err(|error| {
+        InfsError::ConfigError(format!("Failed to replace config file: {}", error.error))
+    })?;
+
+    #[cfg(unix)]
     {
-        std::fs::write(path, content).map_err(|error| {
-            InfsError::ConfigError(format!("Failed to write config file: {}", error))
-        })
+        use std::os::unix::fs::PermissionsExt;
+
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600)).map_err(
+            |error| InfsError::ConfigError(format!("Failed to secure config file: {error}")),
+        )?;
     }
+
+    Ok(())
 }
 
 pub fn save_provider_credentials(
@@ -420,6 +608,7 @@ pub fn save_provider_credentials(
     let provider_config = config.providers.entry(provider_id.to_string()).or_default();
     provider_config.credentials = credentials;
     provider_config.external_credentials.clear();
+    provider_config.external_credentials_disabled = false;
     provider_config.connected = true;
     save_config(&config)
 }
@@ -427,11 +616,11 @@ pub fn save_provider_credentials(
 pub fn remove_provider_credentials(provider_id: &str) -> Result<(), InfsError> {
     let mut config = load_config_with_env(false)?;
 
-    if let Some(provider_config) = config.providers.get_mut(provider_id) {
-        provider_config.credentials.clear();
-        provider_config.external_credentials.clear();
-        provider_config.connected = false;
-    }
+    let provider_config = config.providers.entry(provider_id.to_string()).or_default();
+    provider_config.credentials.clear();
+    provider_config.external_credentials.clear();
+    provider_config.external_credentials_disabled = true;
+    provider_config.connected = false;
     save_config(&config)
 }
 
@@ -549,6 +738,44 @@ mod tests {
     }
 
     #[test]
+    fn test_atomic_config_write_replaces_existing_file() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let path = temp_dir.path().join("config.json");
+        write_config_file(&path, "{\"ok\":true}").unwrap();
+        write_config_file(&path, "{\"updated\":true}").unwrap();
+        assert_eq!(std::fs::read_to_string(path).unwrap(), "{\"updated\":true}");
+    }
+
+    #[test]
+    fn test_parse_previous_config() {
+        let content = r#"
+[providers.openrouter]
+auth_method = "api_key"
+connected = true
+keychain_credentials = ["api_key"]
+
+[providers.openrouter.credentials]
+api_key = "from-config"
+"#;
+        let config = parse_previous_config(content).unwrap();
+        let provider = &config.providers["openrouter"];
+        assert_eq!(provider.auth_method.as_deref(), Some("api_key"));
+        assert_eq!(provider.credentials["api_key"], "from-config");
+        assert_eq!(provider.keychain_credentials, vec!["api_key"]);
+        assert!(provider.connected);
+    }
+
+    #[test]
+    fn test_parse_previous_credentials() {
+        let content = r#"
+[replicate.credentials]
+api_key = "from-file"
+"#;
+        let credentials = parse_previous_credentials(content).unwrap();
+        assert_eq!(credentials["replicate"].credentials["api_key"], "from-file");
+    }
+
+    #[test]
     fn test_parse_wavespeed_cli_api_key() {
         assert_eq!(
             parse_wavespeed_cli_api_key(r#"{"apiKey":"  external-key  "}"#),
@@ -618,6 +845,30 @@ api.replicate.com:
             config.providers["replicate"].get_api_key(),
             Some("infs-key")
         );
+    }
+
+    #[test]
+    fn test_external_credentials_can_be_disabled() {
+        let mut config = AppConfig::default();
+        config.providers.insert(
+            "wavespeed".to_string(),
+            ProviderConfig {
+                external_credentials_disabled: true,
+                ..Default::default()
+            },
+        );
+
+        merge_wavespeed_cli_credentials(&mut config, "external-key".to_string());
+        merge_env_credentials(
+            &mut config,
+            HashMap::from([(
+                "wavespeed".to_string(),
+                HashMap::from([("api_key".to_string(), "env-key".to_string())]),
+            )]),
+        );
+
+        assert!(config.providers["wavespeed"].get_api_key().is_none());
+        assert!(!config.providers["wavespeed"].connected);
     }
 
     #[test]

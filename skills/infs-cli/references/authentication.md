@@ -28,13 +28,14 @@ infs provider connect <provider-id>
 
 Never pass a key as a command-line argument, put it in JSON input or prompts,
 commit it to a repository, or include it in logs or agent messages. Do not
-print the credentials file or enable shell tracing while credentials are in
+print the config file or enable shell tracing while credentials are in
 the environment. For automation, inject secrets from your CI or workstation
 secret manager into the process environment and remove them from logs.
 
-The CLI can use the OS keychain, environment variables, or the protected file
-fallback. Keep `.env` files ignored by version control and use them only from
-trusted project directories. Rotate a key immediately if it is exposed.
+The CLI uses the user-level `config.json`, environment variables, and
+runtime-only credentials from supported provider CLIs. Keep `.env` files
+ignored by version control and use them only from trusted project directories.
+Rotate a key immediately if it is exposed.
 
 ## Connecting to Providers
 
@@ -45,6 +46,8 @@ infs provider connect <provider-id>
 ```
 
 You will be prompted to enter your API key. The key is stored in the user-level `infs` JSON configuration at `config.json`; on Unix, the file is written with `0600` permissions.
+
+When upgrading from an earlier infs release, existing provider settings and credentials are imported into `config.json` on first load. The previous files and keychain entries are left untouched.
 
 ### Provider IDs and Key URLs
 
@@ -97,6 +100,8 @@ infs --json provider status openrouter
 ```bash
 infs provider disconnect openrouter
 ```
+
+Disconnecting removes stored credentials and disables environment/provider-CLI fallbacks for that provider until the next `connect`.
 
 ## Config File Location
 

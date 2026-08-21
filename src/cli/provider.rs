@@ -214,7 +214,10 @@ async fn disconnect_provider(provider_id: &str) -> Result<()> {
     let provider = registry.find_provider(provider_id)?;
 
     config::remove_provider_credentials(provider_id)?;
-    println!("Disconnected from {}.", provider.descriptor().display_name);
+    println!(
+        "Disconnected from {}. Stored credentials and external credential fallbacks are disabled until the next connect.",
+        provider.descriptor().display_name
+    );
 
     Ok(())
 }
