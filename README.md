@@ -284,6 +284,10 @@ Run `infs config path` to print the exact path on your system. The file contains
 
 `infs provider connect <provider>` writes the provider API key to this file, and `infs provider disconnect <provider>` removes that provider's stored credentials.
 
+When upgrading from an earlier infs release, existing provider settings and credentials are imported into this file on first load. The previous files and keychain entries are left untouched.
+
+Disconnecting also disables environment and provider-CLI credential fallbacks for that provider until the next `connect`.
+
 When connecting, `infs` validates the API key with the provider before saving it. If you are offline or the provider API is temporarily unavailable, use `--skip-validation` to save the key without the check.
 
 Example:
@@ -479,7 +483,7 @@ src/
 ├── catalog/             # App catalog (aggregates provider listings)
 └── cli/                 # CLI commands
     ├── mod.rs
-    ├── provider.rs      # provider list/connect/show/disconnect
+    ├── provider.rs      # provider list/status/connect/show/disconnect
     ├── app.rs           # app list/run/show
     ├── config.rs        # config path
     └── doctor.rs        # doctor

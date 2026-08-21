@@ -57,6 +57,8 @@ Remove stored credentials for a provider.
 infs provider disconnect openrouter
 ```
 
+This also disables environment and provider-CLI credential fallbacks for the provider until the next `connect`.
+
 ## App Commands
 
 ### `infs app list`
