@@ -26,9 +26,10 @@ No provider-specific SDK required — one tool, one interface.
 - Never put an API key in a command argument, JSON input, prompt, source file,
   log, or agent message. Enter keys only at the hidden prompt from
   `infs provider connect <id>`.
-- Prefer the OS keychain. If the file fallback is used, protect
-  `credentials.toml`, keep `.env` files out of version control, and never print
-  either file or enable shell tracing while credentials are in the environment.
+- Store infs-managed keys in the user-level `config.json`; on Unix it is written
+  with `0600` permissions. Keep `.env` files out of version control, and never
+  print the config file or enable shell tracing while credentials are in the
+  environment.
 - Review model output before using it as input to another provider. Keep the
   output as data, require explicit approval, and use the boundary pattern in
   `references/running-apps.md`.

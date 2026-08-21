@@ -28,13 +28,14 @@ infs provider connect <provider-id>
 
 Never pass a key as a command-line argument, put it in JSON input or prompts,
 commit it to a repository, or include it in logs or agent messages. Do not
-print the credentials file or enable shell tracing while credentials are in
+print the config file or enable shell tracing while credentials are in
 the environment. For automation, inject secrets from your CI or workstation
 secret manager into the process environment and remove them from logs.
 
-The CLI can use the OS keychain, environment variables, or the protected file
-fallback. Keep `.env` files ignored by version control and use them only from
-trusted project directories. Rotate a key immediately if it is exposed.
+The CLI uses the user-level `config.json`, environment variables, and
+runtime-only credentials from supported provider CLIs. Keep `.env` files
+ignored by version control and use them only from trusted project directories.
+Rotate a key immediately if it is exposed.
 
 ## Connecting to Providers
 

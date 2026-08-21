@@ -183,7 +183,7 @@ impl Provider for ReplicateProvider {
         while let Some(url) = next_url.take() {
             let response = client
                 .get(&url)
-                .header("Authorization", format!("Token {}", api_key))
+                .header("Authorization", format!("Bearer {}", api_key))
                 .send()
                 .await?;
 
@@ -255,7 +255,7 @@ impl Provider for ReplicateProvider {
 
         let create_response = client
             .post(&create_url)
-            .header("Authorization", format!("Token {}", api_key))
+            .header("Authorization", format!("Bearer {}", api_key))
             .json(&create_body)
             .send()
             .await?;
@@ -287,7 +287,7 @@ impl Provider for ReplicateProvider {
 
             let poll_response = client
                 .get(&prediction_url)
-                .header("Authorization", format!("Token {}", api_key))
+                .header("Authorization", format!("Bearer {}", api_key))
                 .send()
                 .await?;
 
