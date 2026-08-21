@@ -311,7 +311,7 @@ impl Provider for OpenRouterProvider {
         let response = validation_client()?
             .get("https://openrouter.ai/api/v1/key")
             .header("Authorization", format!("Bearer {}", api_key))
-            .header("HTTP-Referer", "https://github.com/dvaJi/infera")
+            .header("HTTP-Referer", "https://github.com/dvaJi/infs")
             .header("X-Title", "infs")
             .send()
             .await?;
