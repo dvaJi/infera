@@ -66,6 +66,8 @@ infs provider connect wavespeed    # image/video — get key at https://wavespee
 
 Connection validates the key before saving. Use `--skip-validation` only when the provider API cannot be reached.
 
+When upgrading from an earlier infs release, existing provider settings and credentials are imported into `config.json` on first load. `infs provider disconnect <id>` removes stored credentials and disables environment/provider-CLI fallbacks for that provider until the next connect.
+
 ## Quick Examples
 
 ```bash

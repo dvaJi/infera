@@ -46,6 +46,8 @@ infs provider connect <provider-id>
 
 You will be prompted to enter your API key. The key is stored in the user-level `infs` JSON configuration at `config.json`; on Unix, the file is written with `0600` permissions.
 
+When upgrading from an earlier infs release, existing provider settings and credentials are imported into `config.json` on first load. The previous files and keychain entries are left untouched.
+
 ### Provider IDs and Key URLs
 
 | Provider | ID | Get API Key |
@@ -97,6 +99,8 @@ infs --json provider status openrouter
 ```bash
 infs provider disconnect openrouter
 ```
+
+Disconnecting removes stored credentials and disables environment/provider-CLI fallbacks for that provider until the next `connect`.
 
 ## Config File Location
 
